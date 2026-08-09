@@ -4,11 +4,14 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { requireAdminAccess, auditAdminAction } from "@/lib/auth/admin";
 import { getMigrationAwareServerSupabase } from "@/lib/db/server";
+import { maybeIssueInvoice } from "@/lib/invoices/auto";
 import { issueInvoiceForOrder } from "@/lib/invoices/issue";
 import { invalidateShortcodeCache } from "@/lib/content/shortcodes";
 import { LEGAL_DEFAULTS } from "@/lib/legal/defaults";
 import { invalidateCatalogCache } from "@/lib/products/catalog";
+import { adminInbox, sendEmail, verifyEmailTransport } from "@/lib/notifications/email";
 import { notifyStatusChange } from "@/lib/notifications/orders";
+import { BRAND_NAME } from "@/lib/brand";
 import {
   NOTIFY_ON,
   STATUS_LABEL,
@@ -126,6 +129,14 @@ export async function updateOrder(formData: FormData) {
   });
 
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "order.update", entity: "order", entityId: id, metadata: { status } });
+
+  // Honours site_settings.invoice_trigger for the two milestones that are not
+  // order placement. Only fires on an actual transition, so re-saving a shipped
+  // order does not try to raise a second invoice.
+  if (before && before.status !== status) {
+    if (status === "paid") await maybeIssueInvoice(id, "payment");
+    if (status === "shipped") await maybeIssueInvoice(id, "shipment");
+  }
 
   // Notify the customer only when the status actually changed to one worth an
   // email — never on a no-op save or an internal-only status.
@@ -440,6 +451,40 @@ export async function archiveFaq(formData: FormData) {
   const supabase = await getMigrationAwareServerSupabase(); const { error } = await supabase.from("faq_entries").update({ status: "archived", updated_by: actor.userId }).eq("id", id);
   if (error) throw new Error("FAQ-Eintrag konnte nicht archiviert werden.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "faq.archive", entity: "faq", entityId: id }); revalidatePath("/faq"); revalidatePath("/admin/faq");
+}
+
+/**
+ * Opens the mail connection and sends one message to the admin inbox.
+ *
+ * A misconfigured mailbox is otherwise invisible until a real customer orders
+ * and never hears back — the notification path is deliberately best-effort, so
+ * nothing fails loudly on its own. This is the loud version, on demand.
+ */
+export async function sendTestEmail() {
+  const actor = await requireAdminAccess(["admin"]);
+  const inbox = adminInbox();
+  if (!inbox) throw new Error("Keine Admin-E-Mail konfiguriert (ADMIN_EMAIL).");
+
+  const check = await verifyEmailTransport();
+  if (!check.ok) throw new Error(check.detail);
+
+  const sentAt = new Date().toLocaleString("de-DE");
+  const result = await sendEmail({
+    to: inbox,
+    subject: `${BRAND_NAME} — Testnachricht`,
+    text: `Diese Testnachricht wurde am ${sentAt} aus der Administration ausgelöst. Wenn Sie sie lesen, funktioniert der Versand von Bestellbestätigungen und Statusmeldungen.`,
+    html: `<p>Diese Testnachricht wurde am ${sentAt} aus der Administration ausgelöst.</p><p>Wenn Sie sie lesen, funktioniert der Versand von Bestellbestätigungen und Statusmeldungen.</p>`,
+  });
+  if (!result.sent) throw new Error(`Versand fehlgeschlagen: ${result.error ?? result.skipped}`);
+
+  await auditAdminAction({
+    ...actor,
+    actorId: actor.userId,
+    action: "email.test",
+    entity: "settings",
+    metadata: { transport: result.transport ?? "unknown", to: inbox },
+  });
+  revalidatePath("/admin");
 }
 
 export async function issueInvoice(formData: FormData) {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { GitCompareArrows, Heart, Menu, Search, User, X } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CartButton } from "@/components/layout/cart-button";
@@ -33,16 +34,30 @@ export function Header({ sections }: { sections: MegaMenuSection[] }) {
         <p className="container-site">Kostenlose Lieferung ab 999 € in ausgewählten Regionen</p>
       </div>
 
-      <div className="container-site flex h-16 items-center justify-between gap-4 md:h-18">
+      {/*
+        Below xl the row is three tracks: two icons left, two right, and the
+        wordmark centred between them. `flex-1` on both icon groups is what
+        centres it — with one icon on the left and three on the right the logo
+        sat visibly off-axis. From xl the groups collapse to their content and
+        the mega menu takes the middle instead.
+      */}
+      <div className="container-site flex h-16 items-center gap-2 md:h-18">
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <button
-            type="button"
-            className="flex size-10 items-center justify-center rounded-md text-muted hover:bg-elevated hover:text-text xl:hidden focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
-            onClick={() => setMobileMenuOpen(true)}
-            aria-label="Menü öffnen"
-          >
-            <Menu className="size-5" />
-          </button>
+          <div className="flex flex-1 items-center gap-1 xl:flex-none">
+            <button
+              type="button"
+              className="flex size-10 items-center justify-center rounded-md text-muted hover:bg-elevated hover:text-text xl:hidden focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Menü öffnen"
+            >
+              <Menu className="size-5" />
+            </button>
+            <SearchToggle
+              open={searchOpen}
+              onToggle={() => setSearchOpen((v) => !v)}
+              className="xl:hidden"
+            />
+          </div>
           <SheetContent side="left" className="flex w-full max-w-xs flex-col gap-0 p-0">
             <SheetHeader className="border-b border-border p-6">
               <SheetTitle asChild>
@@ -146,25 +161,18 @@ export function Header({ sections }: { sections: MegaMenuSection[] }) {
           className="flex shrink-0 items-center focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2 focus-visible:rounded"
           aria-label={`${BRAND_NAME} Startseite`}
         >
-          {/* The wordmark is 7:1, so a height that reads well on desktop eats
-              half a phone's width. Step it down rather than let it crowd the
-              icon row. */}
-          <Logo className="h-5 w-auto sm:h-6 md:h-8" title={null} />
+          {/* 7:1 aspect ratio: every pixel of height costs seven of width. */}
+          <Logo className="h-4 w-auto sm:h-5 md:h-8" title={null} />
         </Link>
 
         <MegaMenu sections={sections} />
 
-
-        <div className="flex items-center gap-1 sm:gap-2">
-          <button
-            type="button"
-            className="flex size-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-elevated hover:text-text focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2"
-            onClick={() => setSearchOpen((v) => !v)}
-            aria-label="Suche"
-            aria-expanded={searchOpen}
-          >
-            {searchOpen ? <X className="size-5" /> : <Search className="size-5" />}
-          </button>
+        <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2 xl:flex-none">
+          <SearchToggle
+            open={searchOpen}
+            onToggle={() => setSearchOpen((v) => !v)}
+            className="hidden xl:flex"
+          />
           <Link
             href="/konto/anmelden"
             className="hidden size-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-elevated hover:text-text focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2 sm:flex"
@@ -179,6 +187,36 @@ export function Header({ sections }: { sections: MegaMenuSection[] }) {
 
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </header>
+  );
+}
+
+/**
+ * Rendered twice — once in the mobile icon group, once on the desktop right —
+ * with the other hidden. `display: none` keeps the hidden one out of the
+ * accessibility tree, so a screen reader still finds exactly one search button.
+ */
+function SearchToggle({
+  open,
+  onToggle,
+  className,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "size-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-elevated hover:text-text focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2 flex",
+        className,
+      )}
+      onClick={onToggle}
+      aria-label="Suche"
+      aria-expanded={open}
+    >
+      {open ? <X className="size-5" /> : <Search className="size-5" />}
+    </button>
   );
 }
 

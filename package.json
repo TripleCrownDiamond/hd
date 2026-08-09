@@ -16,6 +16,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "clean": "rm -rf .next node_modules",
+    "deploy:install": "npx --yes pnpm@10.28.2 install --frozen-lockfile --prod=false",
+    "deploy:build": "npx --yes pnpm@10.28.2 run build",
     "upload:image": "node scripts/upload-image.mjs",
     "scrape:spartherm": "node scripts/scrape/spartherm.mjs",
     "scrape:hark": "node scripts/scrape/hark.mjs",
@@ -76,6 +78,7 @@
     "lucide-react": "^0.475.0",
     "next": "^15.3.1",
     "next-themes": "^0.4.6",
+    "nodemailer": "^9.0.5",
     "pdf-lib": "^1.17.1",
     "pg": "^8.22.0",
     "react": "^19.1.0",
@@ -93,6 +96,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^22.14.1",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
@@ -111,7 +115,7 @@
     "vitest": "^3.1.1"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19"
   },
   "packageManager": "pnpm@10.28.2"
 }

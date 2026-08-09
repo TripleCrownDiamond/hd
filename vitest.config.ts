@@ -16,6 +16,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // `import "server-only"` is a Next build-time guard with no runtime
+      // module behind it; Vite cannot resolve it, so unit tests for any
+      // server module fail at import. Point it at an empty stub.
+      "server-only": path.resolve(__dirname, "./src/test/server-only-stub.ts"),
     },
   },
 });

@@ -39,7 +39,9 @@ export function ShortlistButtons() {
       </Link>
       <Link
         href="/konto/favoriten"
-        className="text-muted hover:bg-elevated hover:text-text focus-visible:outline-accent relative hidden size-10 items-center justify-center rounded-md transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 sm:flex"
+        // Visible on phones too: it is the second of the two icons that
+        // balance the burger and search on the left of the wordmark.
+        className="text-muted hover:bg-elevated hover:text-text focus-visible:outline-accent relative flex size-10 items-center justify-center rounded-md transition-colors focus-visible:outline-3 focus-visible:outline-offset-2"
         aria-label={
           wishCount > 0 ? `Merkliste, ${wishCount} Produkte` : "Merkliste"
         }

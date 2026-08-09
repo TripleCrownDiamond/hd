@@ -6,6 +6,9 @@ import { missingMandatoryFields } from "@/lib/company";
 import { getPaymentOptions } from "@/lib/payments/server";
 import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
 import { LEGAL_DEFAULTS } from "@/lib/legal/defaults";
+import { adminInbox, emailTransport, verifyEmailTransport } from "@/lib/notifications/email";
+import { Button } from "@/components/ui/button";
+import { sendTestEmail } from "@/app/admin/actions";
 
 interface Blocker {
   ok: boolean;
@@ -23,7 +26,7 @@ interface Blocker {
  * who never visits those pages has no way to know the shop cannot sell.
  */
 export async function GoLiveChecklist() {
-  const [company, paymentOptions, contentResult] = await Promise.all([
+  const [company, paymentOptions, contentResult, mail] = await Promise.all([
     getCompany(),
     getPaymentOptions().catch(() => []),
     getMigrationAwarePublicSupabase()
@@ -33,6 +36,9 @@ export async function GoLiveChecklist() {
         "slug",
         LEGAL_DEFAULTS.map((entry) => entry.slug),
       ),
+    // Actually opens the connection and authenticates — a wrong password shows
+    // up here rather than in a customer's missing confirmation.
+    verifyEmailTransport().catch(() => ({ ok: false, detail: "Prüfung fehlgeschlagen." })),
   ]);
 
   const published = new Set(
@@ -60,6 +66,16 @@ export async function GoLiveChecklist() {
         missingCompany.length === 0
           ? "Impressum vollständig."
           : `Es fehlen: ${missingCompany.join(", ")}.`,
+      href: "/admin/einstellungen",
+    },
+    {
+      ok: mail.ok,
+      label: "E-Mail-Versand",
+      detail: emailTransport()
+        ? `${emailTransport() === "smtp" ? "SMTP" : "Resend"} · Admin-Postfach ${
+            adminInbox() ?? "nicht gesetzt"
+          } · ${mail.detail}`
+        : "Weder SMTP noch Resend konfiguriert — Bestellbestätigungen und Statusmeldungen werden nicht zugestellt.",
       href: "/admin/einstellungen",
     },
     {
@@ -111,6 +127,13 @@ export async function GoLiveChecklist() {
             </li>
           ))}
         </ul>
+        {emailTransport() ? (
+          <form action={sendTestEmail} className="border-border mt-4 border-t pt-4">
+            <Button type="submit" variant="secondary" size="sm">
+              Test-E-Mail an {adminInbox()} senden
+            </Button>
+          </form>
+        ) : null}
       </CardContent>
     </Card>
   );

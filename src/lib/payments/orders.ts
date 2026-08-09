@@ -8,6 +8,7 @@ import { quoteShipping, type ShippingClass } from "@/lib/shipping/rates";
 import { readPaymentSettings } from "./server";
 import { paymentReference, toPaymentOptions, PAYMENT_LABEL, type PaymentMethod } from "./config";
 import { notifyOrderPlaced } from "@/lib/notifications/orders";
+import { maybeIssueInvoice } from "@/lib/invoices/auto";
 import { evaluatePromotion, PromotionError } from "@/lib/promotions/server";
 import { createHash } from "node:crypto";
 
@@ -299,6 +300,10 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
     },
     input.address.email,
   );
+
+  // Honours site_settings.invoice_trigger = "order". Never throws: a missing
+  // company address must not undo an order that is already recorded.
+  await maybeIssueInvoice(order.id, "order");
 
   if (input.cartSessionToken) {
     const sessionHash = createHash("sha256").update(input.cartSessionToken).digest("hex");

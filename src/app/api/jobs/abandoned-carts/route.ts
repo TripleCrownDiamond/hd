@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMigrationAwareServiceSupabase } from "@/lib/db/server";
-import { sendEmail } from "@/lib/notifications/resend";
+import { sendEmail } from "@/lib/notifications/email";
 import { signRecovery } from "@/lib/cart/recovery";
 
 const escape = (value: string) => value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);

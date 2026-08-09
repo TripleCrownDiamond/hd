@@ -8,7 +8,7 @@ import "server-only";
  * down or unconfigured never affects the others, and never affects the order.
  */
 
-import { sendEmail, adminInbox } from "./resend";
+import { sendEmail, adminInbox } from "./email";
 import { sendTelegram, escapeHtml } from "./telegram";
 import {
   newOrderEmail,
