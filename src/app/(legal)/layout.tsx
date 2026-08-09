@@ -6,8 +6,11 @@ const legalNav = [
   { label: "Allgemeine Geschäftsbedingungen", href: "/agb" },
   { label: "Datenschutzerklärung", href: "/datenschutz" },
   { label: "Widerrufsbelehrung", href: "/widerruf" },
+  { label: "Muster-Widerrufsformular", href: "/widerrufsformular" },
   { label: "Versand und Lieferung", href: "/versand" },
   { label: "Zahlungsarten", href: "/zahlung" },
+  { label: "Barrierefreiheit", href: "/barrierefreiheit" },
+  { label: "Cookie-Einstellungen", href: "/cookie-einstellungen" },
 ];
 
 export default function LegalLayout({ children }: { children: ReactNode }) {

@@ -380,7 +380,7 @@ function HowItWorks() {
     {
       icon: ShoppingBag,
       title: "Sicher bestellen",
-      desc: "Verschlüsselte Zahlung mit Stripe, PayPal oder Vorkasse.",
+      desc: "Verschlüsselte Übertragung. Die verfügbaren Zahlungsarten sehen Sie an der Kasse.",
     },
     {
       icon: Truck,

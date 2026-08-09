@@ -26,7 +26,7 @@ export async function PublishedContent({ entry }: { entry: ContentEntryRow }) {
       {excerpt ? <p className="text-muted mt-2">{excerpt}</p> : null}
       <div className="mt-8">
         {entry.format === "markdown" ? (
-          <div className="space-y-4">
+          <div className="legal-prose">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
           </div>
         ) : (

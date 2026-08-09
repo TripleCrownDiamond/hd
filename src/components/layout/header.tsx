@@ -146,7 +146,10 @@ export function Header({ sections }: { sections: MegaMenuSection[] }) {
           className="flex shrink-0 items-center focus-visible:outline-3 focus-visible:outline-accent focus-visible:outline-offset-2 focus-visible:rounded"
           aria-label={`${BRAND_NAME} Startseite`}
         >
-          <Logo className="h-7 w-auto md:h-8" title={null} />
+          {/* The wordmark is 7:1, so a height that reads well on desktop eats
+              half a phone's width. Step it down rather than let it crowd the
+              icon row. */}
+          <Logo className="h-5 w-auto sm:h-6 md:h-8" title={null} />
         </Link>
 
         <MegaMenu sections={sections} />

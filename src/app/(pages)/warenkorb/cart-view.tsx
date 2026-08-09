@@ -275,7 +275,9 @@ export function CartView() {
             <ul className="space-y-2 text-xs text-muted">
               <li className="flex items-start gap-2">
                 <Badge variant="success" className="mt-0.5 shrink-0">Sicher</Badge>
-                <span>Verschlüsselte Zahlung mit Stripe, PayPal oder Vorkasse.</span>
+                {/* Naming providers here claimed methods the shop had not
+                    switched on. The checkout is the only place that knows. */}
+                <span>Verschlüsselte Übertragung. Zahlungsarten sehen Sie an der Kasse.</span>
               </li>
               <li className="flex items-start gap-2">
                 <Badge variant="default" className="mt-0.5 shrink-0">14 Tage</Badge>

@@ -3,6 +3,16 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // The footer and outside links use the spelled-out names; the routes are
+  // shorter. Redirect rather than duplicate a legal text under two URLs, which
+  // is how the two copies end up disagreeing.
+  async redirects() {
+    return [
+      { source: "/widerrufsbelehrung", destination: "/widerruf", permanent: true },
+      { source: "/versand-und-zahlung", destination: "/versand", permanent: true },
+      { source: "/agb-und-kundeninformationen", destination: "/agb", permanent: true },
+    ];
+  },
   images: {
     // Resize at the CDN instead of proxying every catalogue image through the
     // Next optimizer — see src/lib/cloudinary-loader.ts.

@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/components/content/legal-page";
 
 export const metadata: Metadata = {
-  title: "Allgemeine Geschäftsbedingungen",
-  description: "Geltende Vertragsbedingungen für Bestellungen.",
+  title: "Erklärung zur Barrierefreiheit",
+  description: "Barrierefreiheitserklärung nach BFSG.",
 };
 
 export default function Page() {
-  return <LegalPage slug="agb" />;
+  return <LegalPage slug="barrierefreiheit" />;
 }

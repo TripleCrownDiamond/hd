@@ -5,6 +5,8 @@ import { z } from "zod";
 import { requireAdminAccess, auditAdminAction } from "@/lib/auth/admin";
 import { getMigrationAwareServerSupabase } from "@/lib/db/server";
 import { issueInvoiceForOrder } from "@/lib/invoices/issue";
+import { invalidateShortcodeCache } from "@/lib/content/shortcodes";
+import { LEGAL_DEFAULTS } from "@/lib/legal/defaults";
 import { invalidateCatalogCache } from "@/lib/products/catalog";
 import { notifyStatusChange } from "@/lib/notifications/orders";
 import {
@@ -164,6 +166,61 @@ export async function saveContent(formData: FormData) {
   revalidatePath("/admin/inhalte"); revalidatePath(`/${values.slug}`);
 }
 
+/**
+ * Copies the shipped legal and information texts into the CMS as drafts.
+ *
+ * Until an entry exists, those pages render from `lib/legal/defaults` and no
+ * editor can touch them. This turns each one into a normal content entry that
+ * can be edited, reviewed and published like anything else. Slugs that already
+ * exist are skipped, so running it twice never overwrites edited text.
+ */
+export async function seedLegalContent() {
+  const actor = await requireAdminAccess(["admin", "content_editor"]);
+  const supabase = await getMigrationAwareServerSupabase();
+
+  const { data: existing, error: readError } = await supabase
+    .from("content_entries")
+    .select("slug")
+    .in(
+      "slug",
+      LEGAL_DEFAULTS.map((entry) => entry.slug),
+    );
+  if (readError) throw new Error("Vorhandene Inhalte konnten nicht gelesen werden.");
+
+  const taken = new Set((existing ?? []).map((row) => String(row.slug).toLowerCase()));
+  const missing = LEGAL_DEFAULTS.filter((entry) => !taken.has(entry.slug));
+  if (missing.length === 0) {
+    revalidatePath("/admin/inhalte");
+    return;
+  }
+
+  const { error } = await supabase.from("content_entries").insert(
+    missing.map((entry) => ({
+      slug: entry.slug,
+      kind: entry.kind,
+      title: entry.title,
+      excerpt: entry.excerpt,
+      seo_description: entry.seoDescription,
+      format: "markdown" as const,
+      body: entry.body,
+      // Drafts, not published: these texts still need a legal review, and
+      // publishing them here would put them live without one.
+      status: "draft" as const,
+      author_id: actor.userId,
+    })),
+  );
+  if (error) throw new Error("Rechtstexte konnten nicht angelegt werden.");
+
+  await auditAdminAction({
+    ...actor,
+    actorId: actor.userId,
+    action: "content.seed_legal",
+    entity: "content",
+    metadata: { created: missing.map((entry) => entry.slug).join(",") },
+  });
+  revalidatePath("/admin/inhalte");
+}
+
 const reviewSchema = z.object({
   id: z.string().uuid().optional(),
   product_id: z.string().uuid().nullable().optional(),
@@ -225,6 +282,9 @@ export async function saveSiteSettings(formData: FormData) {
     updated_by: actor.userId }).eq("id", 1);
   if (error) throw new Error("Einstellungen konnten nicht gespeichert werden.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "settings.update", entity: "site_settings", entityId: "1" });
+  // Legal pages read the company details through the shortcode cache; without
+  // this an address change takes up to a minute to appear.
+  invalidateShortcodeCache();
   revalidatePath("/", "layout"); revalidatePath("/admin/einstellungen");
 }
 
@@ -287,7 +347,9 @@ export async function savePaymentSettings(formData: FormData) {
   if (error) throw new Error("Zahlungseinstellungen konnten nicht gespeichert werden.");
 
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "payment_settings.update", entity: "payment_settings", entityId: "1" });
-  revalidatePath("/admin/zahlungen"); revalidatePath("/kasse");
+  // The Zahlungsarten page renders the IBAN through a shortcode.
+  invalidateShortcodeCache();
+  revalidatePath("/admin/zahlungen"); revalidatePath("/kasse"); revalidatePath("/zahlung");
 }
 
 const promotionSchema = z.object({

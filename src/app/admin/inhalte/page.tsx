@@ -4,7 +4,9 @@ import { AdminHeader, EmptyAdmin, Field, fieldClass } from "@/components/admin/a
 import { ContentEditor } from "@/components/admin/content-editor";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { saveContent } from "../actions";
+import { AVAILABLE_SHORTCODES } from "@/lib/content/shortcodes";
+import { LEGAL_DEFAULTS } from "@/lib/legal/defaults";
+import { saveContent, seedLegalContent } from "../actions";
 
 export default async function ContentAdminPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const { edit } = await searchParams;
@@ -13,7 +15,22 @@ export default async function ContentAdminPage({ searchParams }: { searchParams:
     supabase.from("content_entries").select("*").order("updated_at", { ascending: false }).limit(100),
     edit ? supabase.from("content_entries").select("*").eq("id", edit).maybeSingle() : Promise.resolve({ data: null }),
   ]);
+  // Which shipped texts are not yet editable entries.
+  const present = new Set((entries ?? []).map((entry) => String(entry.slug).toLowerCase()));
+  const notSeeded = LEGAL_DEFAULTS.filter((entry) => !present.has(entry.slug));
+
   return <div className="space-y-8"><AdminHeader eyebrow="CMS" title="Seiten & Artikel" description="Rich Text, Markdown oder HTML bearbeiten und vor der Veröffentlichung in einer isolierten Vorschau prüfen." />
+    {notSeeded.length > 0 ? <Card><CardContent className="pt-6">
+      <h2 className="text-text font-display text-lg font-semibold">Rechtstexte in das CMS übernehmen</h2>
+      <p className="text-muted mt-2 max-w-3xl text-sm">Diese {notSeeded.length} Seiten werden derzeit aus dem Code ausgeliefert und lassen sich hier nicht bearbeiten. Beim Übernehmen werden sie als <strong>Entwurf</strong> angelegt — nichts geht ungeprüft online. Bereits vorhandene Slugs bleiben unangetastet.</p>
+      <p className="text-muted mt-2 font-mono text-xs">{notSeeded.map((entry) => entry.slug).join(" · ")}</p>
+      <form action={seedLegalContent} className="mt-4"><Button type="submit">Als Entwürfe anlegen</Button></form>
+    </CardContent></Card> : null}
+    <Card><CardContent className="pt-6">
+      <h2 className="text-text font-display text-lg font-semibold">Platzhalter</h2>
+      <p className="text-muted mt-2 max-w-3xl text-sm">Firmendaten, Bankverbindung und Versandkosten nie abtippen — diese Platzhalter werden beim Anzeigen aus den Einstellungen gefüllt, sodass eine Änderung überall gleichzeitig wirkt.</p>
+      <p className="text-muted mt-2 font-mono text-xs leading-relaxed">{AVAILABLE_SHORTCODES.map((code) => `[${code}]`).join(" ")}</p>
+    </CardContent></Card>
     <div className="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]"><Card><CardContent className="pt-6"><Button asChild fullWidth><Link href="/admin/inhalte">Neuer Inhalt</Link></Button><div className="mt-4 space-y-1">{!entries?.length ? <p className="text-muted text-sm">Noch keine Inhalte.</p> : entries.map((entry) => <Link key={entry.id} href={`/admin/inhalte?edit=${entry.id}`} className="hover:bg-elevated block rounded-md p-3"><span className="block text-sm font-medium">{entry.title}</span><span className="text-muted text-xs">{entry.kind} · {entry.status}</span></Link>)}</div></CardContent></Card>
       <Card><CardContent className="pt-6"><form action={saveContent} className="space-y-5">{selected ? <input type="hidden" name="id" value={selected.id} /> : null}<div className="grid gap-4 md:grid-cols-2"><Field label="Titel"><input name="title" required defaultValue={selected?.title ?? ""} className={fieldClass} /></Field><Field label="Slug"><input name="slug" required defaultValue={selected?.slug ?? ""} className={fieldClass} /></Field><Field label="Inhaltstyp"><select name="kind" defaultValue={selected?.kind ?? "page"} className={fieldClass}><option value="page">Seite</option><option value="article">Artikel</option><option value="legal">Rechtstext</option></select></Field><Field label="Status"><select name="status" defaultValue={selected?.status ?? "draft"} className={fieldClass}><option value="draft">Entwurf</option><option value="review">In Prüfung</option><option value="published">Veröffentlicht</option><option value="archived">Archiviert</option></select></Field><Field label="SEO-Titel"><input name="seo_title" defaultValue={selected?.seo_title ?? ""} className={fieldClass} /></Field><Field label="SEO-Beschreibung"><input name="seo_description" defaultValue={selected?.seo_description ?? ""} className={fieldClass} /></Field></div><input type="hidden" name="excerpt" value={selected?.excerpt ?? ""} /><ContentEditor initialBody={selected?.body} initialFormat={selected?.format} /><Button type="submit">Inhalt speichern</Button></form></CardContent></Card>
     </div>{entries === null ? <EmptyAdmin>CMS-Migration noch nicht angewendet oder keine Berechtigung.</EmptyAdmin> : null}</div>;
