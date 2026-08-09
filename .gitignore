@@ -1,0 +1,44 @@
+# Dependencies and builds
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+
+# Local environment and secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Hosting and tools
+.vercel/
+.turbo/
+.cache/
+
+# Supabase local runtime
+supabase/.branches/
+supabase/.temp/
+
+# Editors and OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+pnpm-debug.log*
+
+# Scraping outputs (raw data — never commit; requires human review before publish)
+/data/scraped/
+
+# Temp / corrupt dirs
+node_modules.corrupt*/
+tmp/
+*.log
+.dev-server*.log
+.next-dev*.log
+.next-stale*/

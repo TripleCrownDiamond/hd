@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server";
+import { getMigrationAwareServiceSupabase } from "@/lib/db/server";
+import { verifyRecovery } from "@/lib/cart/recovery";
+export async function GET(request: Request) { const token = new URL(request.url).searchParams.get("token") ?? ""; const id = verifyRecovery(token); if (!id) return NextResponse.json({ ok: false }, { status: 401 }); const supabase = getMigrationAwareServiceSupabase(); const { data } = await supabase.from("abandoned_carts").select("items,promotion_code,status").eq("id", id).maybeSingle(); if (!data || !["active","recovered"].includes(data.status)) return NextResponse.json({ ok: false }, { status: 404 }); await supabase.from("abandoned_carts").update({ status: "recovered", next_reminder_at: null }).eq("id", id); return NextResponse.json({ ok: true, items: data.items, promotionCode: data.promotion_code }); }

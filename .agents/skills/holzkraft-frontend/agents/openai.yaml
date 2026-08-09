@@ -1,0 +1,4 @@
+interface:
+  display_name: "HOLZKRAFT Frontend"
+  short_description: "Build the storefront from the locked design"
+  default_prompt: "Use $holzkraft-frontend to implement the next HOLZKRAFT storefront slice."

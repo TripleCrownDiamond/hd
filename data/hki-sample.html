@@ -1,0 +1,912 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="de" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+
+            
+        
+                
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>HKI CERT / Gerät</title>
+    <link href="/cache-buster-1655456229/bundles/hkicert/css/typeahead.js.css" media="screen" rel="stylesheet" type="text/css" />
+<link href="/cache-buster-1655456229/bundles/hkicert/css/jquery.qtip.css" media="screen" rel="stylesheet" type="text/css" />
+<link href="/cache-buster-1739547692/bundles/hkicert/css/style.css" media="screen" rel="stylesheet" type="text/css" />
+<link href="/cache-buster-1712917380/bundles/hkicert/css/responsive.css" media="screen" rel="stylesheet" type="text/css" />
+    <script src="/cache-buster-1655456229/bundles/hkicert/js/modernizr-2.6.1.min.js" nonce="bC/HvTcDmKOauIFKBG9WwMLtDpJZdXFB"></script>
+
+    <script type="application/javascript">
+        window.documentId = '11';
+        window.onload = function(){
+            // Grab all elements with the class "hasTooltip"
+            $("[data-tooltip]").each(function() { // Notice the .each() loop, discussed below
+                $(this).qtip({
+                    position: {
+                        viewport: $(window)
+                    },
+                    content: {
+                        text: $("#"+$(this).attr("data-tooltip")).html() // Use the html of the hidden element which id is given in the data-tooltip-attribute
+                    },
+                    style: "qtip-bootstrap qtip-hki",
+                    prerender: true
+                }).css("text-decoration", "underline");
+            });
+        }
+    </script>
+</head>
+<body class="hk">
+<!-- #container -->
+<div id='container'>
+    <!-- #metanav -->
+    <nav id="metanav">
+        <!-- .navCont -->
+        <div class="navCont clearfix">
+            <div id="languages">
+                <ul>
+                                                                                                                                                                                                                                
+                            <li>
+                                <a
+                                    name="languageLink"
+                                    title="English version"
+                                    href="/en/home"
+                                    id="languageLink"
+                                >
+                                    <img
+                                        title="English version"
+                                        src="/bundles/pimcoreadmin/img/flags/countries/gb.svg"
+                                        width="20"
+                                        height="13"
+                                        alt="en"
+                                    />
+                                </a>
+                            </li>
+                                                                                                        </ul>
+            </div>
+        </div>
+        <!-- /.navCont -->
+
+        <!-- .navCont -->
+        <div class="navCont clearfix">
+            <div>
+                                                                                
+                        <ul>
+    <li class=" main">
+        <a id="pimcore-navigation-renderer-menu-16" class=" main" href="https://www.hki-online.de/de/topNav/impressum" target="_blank">Impressum</a>
+    </li>
+    <li class=" main">
+        <a id="pimcore-navigation-renderer-menu-17" class=" main" href="/de/datenschutz">Datenschutz</a>
+    </li>
+    <li class=" main">
+        <a id="pimcore-navigation-renderer-menu-18" class=" main" href="https://www.hki-online.de/de/topNav/disclaimer" target="_blank">Disclaimer</a>
+    </li>
+</ul>
+                                                </div>
+        </div>
+        <!-- /.navCont -->
+    </nav>
+    <!-- /#metanav -->
+    <!-- #head -->
+    <header id="head">
+        <!-- .headCont -->
+        <div class="headCont clearfix">
+            <h1><a href="/"><img src="/bundles/hkicert/images/logo_hk.png" height="103" width="150"/></a></h1>
+
+                                                                    <div class="logos">
+                                                <a href="https://www.hki-online.de" target="_blank">
+                    <picture >
+	<source srcset="/_default_upload_bucket/3/image-thumb__3___auto_40cd750bba9870f18aada2478b24840a/hki-logo.7ebf206e.avif 1x, /_default_upload_bucket/3/image-thumb__3___auto_40cd750bba9870f18aada2478b24840a/hki-logo@2x.7ebf206e.avif 2x" width="120" height="64" type="image/avif" />
+	<source srcset="/_default_upload_bucket/3/image-thumb__3___auto_40cd750bba9870f18aada2478b24840a/hki-logo.9941d91a.webp 1x, /_default_upload_bucket/3/image-thumb__3___auto_40cd750bba9870f18aada2478b24840a/hki-logo@2x.9941d91a.webp 2x" width="120" height="64" type="image/webp" />
+	<source srcset="/_default_upload_bucket/3/image-thumb__3___auto_40cd750bba9870f18aada2478b24840a/hki-logo.9941d91a.png 1x, /_default_upload_bucket/3/image-thumb__3___auto_40cd750bba9870f18aada2478b24840a/hki-logo@2x.9941d91a.png 2x" width="120" height="64" type="image/png" />
+	<img src="/_default_upload_bucket/3/image-thumb__3___auto_40cd750bba9870f18aada2478b24840a/hki-logo.9941d91a.png" width="120" height="64" alt="" loading="lazy" srcset="/_default_upload_bucket/3/image-thumb__3___auto_40cd750bba9870f18aada2478b24840a/hki-logo.9941d91a.png 1x, /_default_upload_bucket/3/image-thumb__3___auto_40cd750bba9870f18aada2478b24840a/hki-logo@2x.9941d91a.png 2x" />
+</picture>
+
+                </a>
+                                                            <a href="http://www.schornsteinfeger.de" target="_blank">
+                    <picture >
+	<source srcset="/_default_upload_bucket/4/image-thumb__4___auto_40cd750bba9870f18aada2478b24840a/logo-ZIV.05d5370a.avif 1x, /_default_upload_bucket/4/image-thumb__4___auto_40cd750bba9870f18aada2478b24840a/logo-ZIV@2x.05d5370a.avif 2x" width="130" height="80" type="image/avif" />
+	<source srcset="/_default_upload_bucket/4/image-thumb__4___auto_40cd750bba9870f18aada2478b24840a/logo-ZIV.21624215.webp 1x, /_default_upload_bucket/4/image-thumb__4___auto_40cd750bba9870f18aada2478b24840a/logo-ZIV@2x.21624215.webp 2x" width="130" height="80" type="image/webp" />
+	<source srcset="/_default_upload_bucket/4/image-thumb__4___auto_40cd750bba9870f18aada2478b24840a/logo-ZIV.21624215.png 1x, /_default_upload_bucket/4/image-thumb__4___auto_40cd750bba9870f18aada2478b24840a/logo-ZIV@2x.21624215.png 2x" width="130" height="80" type="image/png" />
+	<img src="/_default_upload_bucket/4/image-thumb__4___auto_40cd750bba9870f18aada2478b24840a/logo-ZIV.21624215.png" width="130" height="80" alt="" loading="lazy" srcset="/_default_upload_bucket/4/image-thumb__4___auto_40cd750bba9870f18aada2478b24840a/logo-ZIV.21624215.png 1x, /_default_upload_bucket/4/image-thumb__4___auto_40cd750bba9870f18aada2478b24840a/logo-ZIV@2x.21624215.png 2x" />
+</picture>
+
+                </a>
+                                                            <a href="http://www.zvshk.de" target="_blank">
+                    <picture >
+	<source srcset="/_default_upload_bucket/5/image-thumb__5___auto_40cd750bba9870f18aada2478b24840a/logo-ZVSHK.c56d7118.avif 1x, /_default_upload_bucket/5/image-thumb__5___auto_40cd750bba9870f18aada2478b24840a/logo-ZVSHK@2x.c56d7118.avif 2x" width="181" height="60" type="image/avif" />
+	<source srcset="/_default_upload_bucket/5/image-thumb__5___auto_40cd750bba9870f18aada2478b24840a/logo-ZVSHK.d9b4840d.webp 1x, /_default_upload_bucket/5/image-thumb__5___auto_40cd750bba9870f18aada2478b24840a/logo-ZVSHK@2x.d9b4840d.webp 2x" width="181" height="60" type="image/webp" />
+	<source srcset="/_default_upload_bucket/5/image-thumb__5___auto_40cd750bba9870f18aada2478b24840a/logo-ZVSHK.d9b4840d.png 1x, /_default_upload_bucket/5/image-thumb__5___auto_40cd750bba9870f18aada2478b24840a/logo-ZVSHK@2x.d9b4840d.png 2x" width="181" height="60" type="image/png" />
+	<img src="/_default_upload_bucket/5/image-thumb__5___auto_40cd750bba9870f18aada2478b24840a/logo-ZVSHK.d9b4840d.png" width="181" height="60" alt="" loading="lazy" srcset="/_default_upload_bucket/5/image-thumb__5___auto_40cd750bba9870f18aada2478b24840a/logo-ZVSHK.d9b4840d.png 1x, /_default_upload_bucket/5/image-thumb__5___auto_40cd750bba9870f18aada2478b24840a/logo-ZVSHK@2x.d9b4840d.png 2x" />
+</picture>
+
+                </a>
+                        </div>
+
+                            
+                                                                
+                    <nav id="metanav2">
+                        <ul>
+    <li>
+        <a id="pimcore-navigation-renderer-menu-19" class="cert main" href="/de/zertifizierungsdatenbanken">Zertifizierungs Datenbanken</a>
+    </li>
+    <li>
+        <a id="pimcore-navigation-renderer-menu-20" class="themen main" href="/de/themenportale">Themen Portale</a>
+    </li>
+</ul>
+                    </nav>
+                            
+            
+
+        </div>
+        <!-- /.headCont -->
+    </header>
+    <!-- /#head -->
+    <!-- #main -->
+    <div id='main' role='main'>
+        <div class="gradient"></div>
+        <!-- #mainnav -->
+        <nav id="mainnav" role="navigation">
+            <div class="navCont clearfix">
+                                                                                
+                        <ul>
+    <li class="sprechblase main">
+        <a id="pimcore-navigation-renderer-menu-3" class="sprechblase main" href="/de/home">Startseite</a>
+    </li>
+    <li class="active feuer main active active-trail">
+        <a id="pimcore-navigation-renderer-menu-8" class="feuer main active active-trail" href="/de/geraete/hersteller-liste">Geräte</a>
+    </li>
+    <li class="klingel main">
+        <a id="pimcore-navigation-renderer-menu-12" class="klingel main" href="/de/grundlagen">grundlagen</a>
+    </li>
+</ul>
+                                                </div>
+        </nav>
+        <!-- /#mainnav -->
+        <!-- #mainCont -->
+        <div id="mainCont">
+            <!-- .cont -->
+                <div class="cont">
+        <h2>
+            <span>Geräteeigenschaften:</span>
+
+            <span>Spartherm Feuerungstechnik GmbH - Trico L steel  6,0 kW 1.0</span>
+
+                    </h2>
+
+        <fieldset>
+            <legend>Stammdaten</legend>
+            <table summary="Layout">
+                <tbody>
+                                <tr>
+                    <th class="leftAligned">Eintrag vom</th>
+                    <td>
+                                                    13.09.2024
+                                            </td>
+                                    </tr>
+                <tr>
+                    <th class="leftAligned" style="vertical-align: top">Hersteller</th>
+                    <td>
+                        Spartherm Feuerungstechnik GmbH
+                    </td>
+                </tr>
+
+                
+                <tr>
+                    <th class="leftAligned">Modell</th>
+                    <td>Trico L steel  6,0 kW 1.0</td>
+                </tr>
+
+                
+                            <tr>
+            <th class="leftAligned">Nennwärmeleistung [kW]</th>
+            <td>6</td>
+        </tr>
+    
+            <tr>
+            <th class="leftAligned">Raumwärmeleistung (bei Nennlast) [kW]</th>
+            <td>6</td>
+        </tr>
+    
+    
+    
+    
+    
+    
+    <tr>
+        <th class="leftAligned">Dauerbrandfeuerstätte</th>
+        <td>
+                            <img src="/bundles/hkicert/images/red_hyphen.svg" class="rating" title="Nein" alt="remove"/>
+                    </td>
+    </tr>
+            
+                                <tr>
+                    <th class="leftAligned">Norm der Typprüfung</th>
+                    <td>DIN EN 13240</td>
+                </tr>
+                
+                                <tr>
+                    <th class="leftAligned">Prüfjahr</th>
+                    <td>2023</td>
+                </tr>
+                
+                                    <tr>
+                        <th class="leftAligned" style="vertical-align: top">Prüfstelle</th>
+                        <td>DBI-Gastechnisches Institut gGmbH Freiberg</td>
+                    </tr>
+                    <tr>
+                        <th class="leftAligned">Prüfstellennummer</th>
+                        <td>12</td>
+                    </tr>
+                                                    <tr>
+                        <th class="leftAligned" style="white-space: nowrap">Nummer des Prüfberichts</th>
+                        <td>F 23/01/1009</td>
+                    </tr>
+                                                                                                                                                                                                                                                                                                                </tbody>
+            </table>
+        </fieldset>
+
+            
+        
+            
+    <fieldset style="padding-top: 10px">
+        <legend>Abgaswerte</legend>
+        <table summary="Layout">
+            <thead>
+                <th>&nbsp;</th>
+                <th style="text-align: right">
+                                            Holz
+                                    </th>
+                <th style="text-align: right">
+                                    </th>
+                <th style="text-align: right">
+                                    </th>
+            </thead>
+            <tbody>
+                                    <tr>
+                        <th class="leftAligned">Abgas Massenstrom [g/s]</th>
+                        <td style="text-align: right">
+                                                            5,69
+                                                    </td>
+                        <td style="text-align: right">
+                                                    </td>
+                        <td style="text-align: right">
+                                                    </td>
+                    </tr>
+                                                    <tr>
+                        <th class="leftAligned">Abgastemperatur [°C]</th>
+                        <td style="text-align: right">
+                                                            282
+                                                    </td>
+                        <td style="text-align: right">
+                                                    </td>
+                        <td style="text-align: right">
+                                                    </td>
+                    </tr>
+                                                    <tr>
+                        <th class="leftAligned">Notwendiger Förderdruck [Pa]</th>
+                        <td style="text-align: right">
+                                                            12
+                                                    </td>
+                        <td style="text-align: right">
+                                                    </td>
+                        <td style="text-align: right">
+                                                    </td>
+                    </tr>
+                            </tbody>
+        </table>
+    </fieldset>
+    
+            <fieldset>
+        <legend>weitere wichtige Geräteeigenschaften</legend>
+        <table summary="Layout">
+            <tbody>
+                <tr>
+                    <th class="leftAligned">Eignung zur Mehrfachbelegung<sup>1)</sup></th>
+                    <td style="text-align: right; line-height: 2rem">
+                                                    <img src="/bundles/hkicert/images/green_check.svg" class="rating" title="Ja" alt="ok"/>
+                                            </td>
+                </tr>
+                <tr>
+                    <th class="leftAligned">Anschlußmöglichkeit an das Zentralheizsystem</th>
+                    <td style="text-align: right; line-height: 2rem">
+                                                    <img src="/bundles/hkicert/images/red_hyphen.svg" class="rating" title="Nein" alt="remove"/>
+                                            </td>
+                </tr>
+                <tr>
+                    <th class="leftAligned">Bauaufsichtliche Zulassung für den raumluftunabhängigen Betrieb</th>
+                    <td style="text-align: right; line-height: 2rem">
+                                                    <img src="/bundles/hkicert/images/red_hyphen.svg" class="rating" title="Nein" alt="remove"/>
+                                            </td>
+                </tr>
+                                                                <tr>
+                    <th class="leftAligned">Gerätetyp nach EN 16510-1</th>
+                    <td style="text-align: right; line-height: 2rem">
+                                                    <img src="/bundles/hkicert/images/grey_hyphen.svg" class="rating" title="Wert nicht bekannt" alt="hyphen"/>
+                                            </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="font-size: 0.9em">
+                        <p><sup>1)</sup> Bei raumluftabhängigem Betrieb kann die Feuerstätte zur Mehrfachbelegung geeignet sein (siehe Installationsanleitung).</p><p>Hiermit bestätigt der HKI Industrieverband e.V. im Auftrag des Herstellers die Einhaltung der jeweiligen Anforderung* gemäß 1.BImSchV. Der Typprüfbericht der Feuerstätte liegt dem HKI Industrieverband e.V. vor.</p><p>* Ein grüner Haken mit einer „1“ zeigt an, dass die Anforderungen der 1. BImSchV erfüllt werden, ein grüner Haken mit einer „2“ zeigt an, dass die 2. Stufe der 1. BImSchV erfüllt wird. Bei einem gelben Haken wird die Übergangsregelung der 1.BImSchV erfüllt und bei einem roten Strich wird die 1.BImSchV nicht erfüllt.</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </fieldset>
+
+                    
+                            <fieldset class="emphasize">
+                    <legend>Bewertung von Emissionsdaten und Wirkungsgrad Holz</legend>
+                    <table summary="Layout">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left">EU-Raumheizer für Holz nach EN 13240</th>
+                                <th>Bewertung</th>
+                                <th>&nbsp;</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                                            <tr style="border-top: 1px solid #ddd">
+                                    <td>EU - Verordnung (EU) 2015/1185 (Ökodesign)</td>
+                                    <td style="text-align: center; vertical-align: middle">
+                                                                                    <img class="rating" src="/bundles/hkicert/images/green_check.svg" title="Die Ökodesign-Anforderungen für Scheitholz werden erfüllt" alt=""/>
+                                                                                                                                                            </td>
+                                    <td style="text-align: center; vertical-align: middle" class="noPrint mobileHidden">
+                                                                                    <span data-tooltip="bc66e94b-502a-4d50-ac89-3c1a280e3c2c-holz-details">
+                                                Details
+                                            </span>
+                                            <div id="bc66e94b-502a-4d50-ac89-3c1a280e3c2c-holz-details" class="hidden">
+                                                <table summary="Layout" style="line-height: 22px;">
+                                                    <tr>
+                                                        <td>Raumheizungsjahresnutzungsgrad</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Wirkungsgrad</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>CO</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>OGC</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Staub</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>NOx</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                                                                    </table>
+                                            </div>
+
+                                                                                                                        </td>
+                                </tr>
+                                                            <tr style="border-top: 1px solid #ddd">
+                                    <td>D - 1.BImSchV</td>
+                                    <td style="text-align: center; vertical-align: middle">
+                                                                                    <img class="rating" src="/bundles/hkicert/images/green_check_2.svg" title="Die Anforderungen für Stufe 2 in Deutschland für Scheitholz werden erfüllt" alt=""/>
+                                                                                                                                                            </td>
+                                    <td style="text-align: center; vertical-align: middle" class="noPrint mobileHidden">
+                                                                                    <span data-tooltip="8cca2b2a-d127-4382-8aae-33a2b7450d9c-holz-details">
+                                                Details
+                                            </span>
+                                            <div id="8cca2b2a-d127-4382-8aae-33a2b7450d9c-holz-details" class="hidden">
+                                                <table summary="Layout" style="line-height: 22px;">
+                                                    <tr>
+                                                        <td>Raumheizungsjahresnutzungsgrad</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Wirkungsgrad</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>CO</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>OGC</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Staub</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>NOx</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                                                                    </table>
+                                            </div>
+
+                                            &nbsp;&nbsp;
+                                                <span data-tooltip="8cca2b2a-d127-4382-8aae-33a2b7450d9c-holz-erklaerung">
+                                                    Erklärung
+                                                </span>
+                                                <div id="8cca2b2a-d127-4382-8aae-33a2b7450d9c-holz-erklaerung" class="hidden">
+                                                    <div>Mit der Erfüllung der Anforderungen der Stufe 2 der 1. BImSchV ist der Weiterbetrieb, die Neuerrichtung sowie der Umzug einer Feuerstätte zulässig.​​</div><div><br>Der Weiterbetrieb einer Feuerstätte, die die Stufe 2 der 1.BImSchV erfüllt, ist zulässig.<br></div><div>
+
+
+
+
+
+
+
+
+
+
+
+<style>@font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;
+	mso-font-charset:0;
+	mso-generic-font-family:roman;
+	mso-font-pitch:variable;
+	mso-font-signature:-536870145 1107305727 0 0 415 0;}p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-unhide:no;
+	mso-style-qformat:yes;
+	mso-style-parent:"";
+	margin:0cm;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman",serif;
+	mso-fareast-font-family:"Times New Roman";}.MsoChpDefault
+	{mso-style-type:export-only;
+	mso-default-props:yes;
+	font-size:10.0pt;
+	mso-ansi-font-size:10.0pt;
+	mso-bidi-font-size:10.0pt;}div.WordSection1
+	{page:WordSection1;}</style></div>
+                                                </div>
+                                                                                                                        </td>
+                                </tr>
+                                                            <tr style="border-top: 1px solid #ddd">
+                                    <td>A - Österreichische Vereinbarung gemäß Art.15a B-VG</td>
+                                    <td style="text-align: center; vertical-align: middle">
+                                                                                    <img class="rating" src="/bundles/hkicert/images/green_check.svg" title="Die Anforderungen in Österreich für Scheitholz werden erfüllt" alt=""/>
+                                                                                                                                                            </td>
+                                    <td style="text-align: center; vertical-align: middle" class="noPrint mobileHidden">
+                                                                                    <span data-tooltip="445f1ad6-ba63-429b-a606-15398549f6d0-holz-details">
+                                                Details
+                                            </span>
+                                            <div id="445f1ad6-ba63-429b-a606-15398549f6d0-holz-details" class="hidden">
+                                                <table summary="Layout" style="line-height: 22px;">
+                                                    <tr>
+                                                        <td>Raumheizungsjahresnutzungsgrad</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Wirkungsgrad</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>CO</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>OGC</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Staub</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>NOx</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                                                                    </table>
+                                            </div>
+
+                                                                                                                        </td>
+                                </tr>
+                                                            <tr style="border-top: 1px solid #ddd">
+                                    <td>CH - Schweizer Luftreinhalteverordnung</td>
+                                    <td style="text-align: center; vertical-align: middle">
+                                                                                    <img class="rating" src="/bundles/hkicert/images/green_check.svg" title="Die Anforderungen in der Schweiz für Scheitholz werden erfüllt" alt=""/>
+                                                                                                                                                            </td>
+                                    <td style="text-align: center; vertical-align: middle" class="noPrint mobileHidden">
+                                                                                    <span data-tooltip="d0bef337-3fc5-4bbf-b1fb-6e9b63ac007b-holz-details">
+                                                Details
+                                            </span>
+                                            <div id="d0bef337-3fc5-4bbf-b1fb-6e9b63ac007b-holz-details" class="hidden">
+                                                <table summary="Layout" style="line-height: 22px;">
+                                                    <tr>
+                                                        <td>Raumheizungsjahresnutzungsgrad</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Wirkungsgrad</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>CO</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>OGC</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Staub</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>NOx</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                                                                    </table>
+                                            </div>
+
+                                                                                                                        </td>
+                                </tr>
+                                                            <tr style="border-top: 1px solid #ddd">
+                                    <td>DK - Dänische Kaminofenverordnung</td>
+                                    <td style="text-align: center; vertical-align: middle">
+                                                                                    <img class="rating" src="/bundles/hkicert/images/green_check.svg" title="Die Anforderungen in Dänemark für Scheitholz werden erfüllt" alt=""/>
+                                                                                                                                                            </td>
+                                    <td style="text-align: center; vertical-align: middle" class="noPrint mobileHidden">
+                                                                                    <span data-tooltip="ee3d61b6-dc16-4055-be1a-9667fa7484f3-holz-details">
+                                                Details
+                                            </span>
+                                            <div id="ee3d61b6-dc16-4055-be1a-9667fa7484f3-holz-details" class="hidden">
+                                                <table summary="Layout" style="line-height: 22px;">
+                                                    <tr>
+                                                        <td>Raumheizungsjahresnutzungsgrad</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Wirkungsgrad</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>CO</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>OGC</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Staub</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>NOx</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                                                                    </table>
+                                            </div>
+
+                                                                                                                        </td>
+                                </tr>
+                                                            <tr style="border-top: 1px solid #ddd">
+                                    <td>F - Crédit d’impôt à la transition énergétique</td>
+                                    <td style="text-align: center; vertical-align: middle">
+                                                                                    <img class="rating" src="/bundles/hkicert/images/green_check_7_star.svg" title="Die Anforderungen der Stufe 7 der Crédit d’impôt à la transition énergétique in Frankreich für Scheitholz werden erfüllt" alt=""/>
+                                                                                                                                                            </td>
+                                    <td style="text-align: center; vertical-align: middle" class="noPrint mobileHidden">
+                                                                                    <span data-tooltip="fbf89dbf-3cfc-4420-bd35-07e25715546d-holz-details">
+                                                Details
+                                            </span>
+                                            <div id="fbf89dbf-3cfc-4420-bd35-07e25715546d-holz-details" class="hidden">
+                                                <table summary="Layout" style="line-height: 22px;">
+                                                    <tr>
+                                                        <td>Raumheizungsjahresnutzungsgrad</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Wirkungsgrad</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>CO</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>OGC</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Staub</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>NOx</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                                                                            <tr>
+                                                            <td colspan="2">I = 0.26</td>
+                                                        </tr>
+                                                                                                    </table>
+                                            </div>
+
+                                                                                                                        </td>
+                                </tr>
+                                                            <tr style="border-top: 1px solid #ddd">
+                                    <td>I - Italienisches Dekret Nr. 186</td>
+                                    <td style="text-align: center; vertical-align: middle">
+                                                                                    <img class="rating" src="/bundles/hkicert/images/green_check_with_4_stars.svg" title="Die Anforderungen in Italien für die 4-Sterne-Klasse werden mit Scheitholz erfüllt" alt=""/>
+                                                                                                                                                            </td>
+                                    <td style="text-align: center; vertical-align: middle" class="noPrint mobileHidden">
+                                                                                    <span data-tooltip="8207bf77-02ab-4def-8c30-0d641a430e31-holz-details">
+                                                Details
+                                            </span>
+                                            <div id="8207bf77-02ab-4def-8c30-0d641a430e31-holz-details" class="hidden">
+                                                <table summary="Layout" style="line-height: 22px;">
+                                                    <tr>
+                                                        <td>Raumheizungsjahresnutzungsgrad</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Wirkungsgrad</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>CO</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>OGC</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Staub</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>NOx</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/green_check.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                                                                    </table>
+                                            </div>
+
+                                                                                                                        </td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                </fieldset>
+                            <fieldset class="emphasize">
+                    <legend>Bewertung von Emissionsdaten und Wirkungsgrad Braunkohlenbriketts</legend>
+                    <table summary="Layout">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left">Norm DIN EN 13240 (Zeitbrand): Raumheizer mit Flachfeuerung</th>
+                                <th>Bewertung</th>
+                                <th>&nbsp;</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                                            <tr style="border-top: 1px solid #ddd">
+                                    <td>D - 1.BImSchV</td>
+                                    <td style="text-align: center; vertical-align: middle">
+                                                                                    <img class="rating" src="/bundles/hkicert/images/grey_exclamation_mark.svg" title="Die Messwerte für die Erfüllung der Anforderungen in Deutschland für Braunkohlenbriketts sind nicht vorhanden  oder nicht bekannt, der Betrieb mit Braunkohlenbriketts ist nicht zulässig" alt=""/>
+                                                                                                                                                            </td>
+                                    <td style="text-align: center; vertical-align: middle" class="noPrint mobileHidden">
+                                                                                    <span data-tooltip="8cca2b2a-d127-4382-8aae-33a2b7450d9c-kohle-details">
+                                                Details
+                                            </span>
+                                            <div id="8cca2b2a-d127-4382-8aae-33a2b7450d9c-kohle-details" class="hidden">
+                                                <table summary="Layout" style="line-height: 22px;">
+                                                    <tr>
+                                                        <td>Raumheizungsjahresnutzungsgrad</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Wirkungsgrad</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/grey_exclamation_mark.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>CO</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/grey_exclamation_mark.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>OGC</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Staub</td>
+                                                        <td>
+                                                                                                                            <img class="rating" src="/bundles/hkicert/images/grey_exclamation_mark.svg" alt="" />
+                                                                                                                    </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>NOx</td>
+                                                        <td>
+                                                                                                                            &nbsp;
+                                                                                                                    </td>
+                                                    </tr>
+                                                                                                    </table>
+                                            </div>
+
+                                            &nbsp;&nbsp;
+                                                <span data-tooltip="8cca2b2a-d127-4382-8aae-33a2b7450d9c-kohle-erklaerung">
+                                                    Erklärung
+                                                </span>
+                                                <div id="8cca2b2a-d127-4382-8aae-33a2b7450d9c-kohle-erklaerung" class="hidden">
+                                                    <p>Werden die Grenzwerte der Übergangsregelung nach §&nbsp;26 nicht erfüllt, dann ist ein Weiterbetrieb nur bis zum jeweiligen Datum der Übergangsregelung möglich.</p>
+<p>Im §&nbsp;26 sind folgender Zeitplan vorgesehen:</p>
+<table style="border: 1px solid black; border-collapse: collapse;">
+<tbody>
+<tr>
+<td style="border: 1px solid black; padding: 0 10px 0 10px;">
+<p><strong>Datum Typenschild</strong></p>
+</td>
+<td style="border: 1px solid black; padding: 0 10px 0 10px;">
+<p><strong>Zeitpunkt der Nachrüstung oder Außerbetriebnahme</strong></p>
+</td>
+</tr>
+<tr>
+<td style="border: 1px solid black; padding: 0 10px 0 10px;">
+<p>bis einschließlich 31.12.1974 oder Datum nicht mehr feststellbar</p>
+</td>
+<td style="border: 1px solid black; padding: 0 10px 0 10px;">
+<p>31.12.2014</p>
+</td>
+</tr>
+<tr>
+<td style="border: 1px solid black; padding: 0 10px 0 10px;">
+<p>01.01.1975 bis 31.12.1984</p>
+</td>
+<td style="border: 1px solid black; padding: 0 10px 0 10px;">
+<p>31.12.2017</p>
+</td>
+</tr>
+<tr>
+<td style="border: 1px solid black; padding: 0 10px 0 10px;">
+<p>01.01.1985 bis 31.12.1994</p>
+</td>
+<td style="border: 1px solid black; padding: 0 10px 0 10px;">
+<p>31.12.2020</p>
+</td>
+</tr>
+<tr>
+<td style="border: 1px solid black; padding: 0 10px 0 10px;">
+<p>01.01.1995 bis einschließlich 21.03.2010</p>
+</td>
+<td style="border: 1px solid black; padding: 0 10px 0 10px;">
+<p>31.12.2024</p>
+</td>
+</tr>
+</tbody>
+</table>
+
+                                                </div>
+                                                                                                                        </td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                </fieldset>
+                    
+        <fieldset class="legend"> <legend>Legende für die Emissionsbewertungen</legend> <table summary="Layout"> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_2.svg"/></td> <td>Die Anforderungen der Stufe 2 werden erfüllt (gilt nur für Deutschland)</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_1.svg"/></td> <td>Die Anforderungen der Stufe 1 werden erfüllt (gilt nur für Deutschland)</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_2015.svg" /></td> <td>Die Anforderungen der Österreichischen Vereinbarung gemäß Art. 15a B-VG ab 2015 werden erfüllt (gilt nur für Österreich)</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_7_star.svg"/></td> <td>Die Anforderungen für die Förderung „Crédit d’impôt“ in Frankreich werden erfüllt, die Feuerstätte entspricht der Klassifizierung 7* des Flamme Verte Label</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_6_star.svg"/></td> <td>Die Anforderungen für die Förderung „Crédit d’impôt“ in Frankreich werden erfüllt, die Feuerstätte entspricht der Klassifizierung 6* des Flamme Verte Label</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_5_star.svg"/></td> <td>Die Anforderungen für die Förderung „Crédit d’impôt“ in Frankreich werden erfüllt, die Feuerstätte entspricht der Klassifizierung 5* des Flamme Verte Label</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_with_1_star.svg" /></td> <td>Die Anforderungen in Italien für die 1-Stern-Klasse werden erfüllt.</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_with_2_stars.svg" /></td> <td>Die Anforderungen in Italien für die 2-Sterne-Klasse werden erfüllt.</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_with_3_stars.svg" /></td> <td>Die Anforderungen in Italien für die 3-Sterne-Klasse werden erfüllt.</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_with_4_stars.svg" /></td> <td>Die Anforderungen in Italien für die 4-Sterne-Klasse werden erfüllt.</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check_with_5_stars.svg" /></td> <td>Die Anforderungen in Italien für die 5-Sterne-Klasse werden erfüllt.</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/green_check.svg" /></td> <td>Die Anforderungen werden erfüllt</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/yellow_check.svg" /></td> <td>Die Anforderungen der Übergangsregelung werden erfüllt</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/red_hyphen.svg" /></td> <td>Die Anforderungen werden nicht erfüllt</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/grey_hyphen.svg" /></td> <td>keine Angabe/nicht bekannt</td> </tr> <tr> <td><img class="rating" src="/bundles/hkicert/images/grey_exclamation_mark.svg" /></td> <td>Für diesen Brennstoff sind keine Messwerte vorhanden, Betrieb mit diesem Brennstoff nicht zulässig</td> </tr> <tr> <td colspan="2">Erscheint kein Symbol sind keine Anforderungen vorhanden.</td> </tr> <tr class="mobileHidden"> <td colspan="2"> <span data-tooltip="explanation">Weitere Informationen finden Sie hier</span> <div id="explanation" class="hidden"> Die für die Feuerstätte gültige Norm und Bezeichnung sowie die von der Datenbank überprüften Anforderungen werden angezeigt. Die Datenbank zeigt aktuell die Erfüllung der folgenden Anforderungen an: <ul> <li> 1.BImSchV vom 26.01.2010 in Deutschland: <ul> <li>Anforderungen für neue Festbrennstoff-Einzelraumfeuerungsanlagen, die vom 22.03.2010 bis zum 31.12.2014 errichtet werden („Stufe 1“), für die auch nach dem 31.12.2014 Bestandsschutz gilt und</li> <li>Anforderungen der Übergangsregelung nach § 26 der 1.BImSchV für bereits vor dem 22.03.2010 installierte Einzelraumfeuerungsanlagen.</li> </ul> </li> <li>Österreichische Vereinbarung gemäß Art 15a B-VG über das Inverkehrbringen und die Überprüfung von Feuerungsanlagen. Hinweis: Die hinterlegten Werte für die 15a Verordnung in Österreich beziehen sich auf die derzeit gültigen Grenzwerte. Bitte beachten Sie: Eine Änderung der 15a Verordnung in Österreich wird zurzeit diskutiert. Die derzeit diskutierten Grenzwerte für die Änderung der 15a Verordnung finden Sie in den Grundlagen zur HKI-Datenbank</li> <li>Schweizer Luftreinhalteverordnung</li> <li>Dänische Holzofenverordnung</li> </ul> </div> </td> </tr> </table> </fieldset>
+
+                    <a href="javascript: history.back();">Zurück</a>&nbsp;
+                            <a href="/de/geraete/geraet?id=ada139b9-74f2-4a5e-a471-30976f71b475&amp;mode=print" id="middleContentCol-printCmd" target="_blank">Druckansicht</a>
+                                        <a href="/de/geraete/geraet?id=ada139b9-74f2-4a5e-a471-30976f71b475&amp;mode=pdf" id="middleContentCol-pdfCmd" target="_blank">PDF-Version</a>
+                    
+    </div>
+            <!-- /.cont -->
+        </div>
+        <!-- /#mainCont -->
+    </div>
+    <!-- /#main -->
+</div>
+<!-- /#container -->
+<!-- footer -->
+<footer class="wood">
+    <div class="footerCont">
+        <!-- .hg -->
+        <div class="hg">
+        </div>
+        <!-- /.hg -->
+    </div>
+</footer>
+<div id="overlay"></div>
+<!-- /footer -->
+<script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js'></script>
+<script>
+    window.jQuery || document.write("&lt;script src='/bundles/hkicert/js/jquery-1.11.0.min.js'>\x3C/script>")
+</script>
+<script src='/bundles/hkicert/js/plugins.js'></script>
+<script src='/bundles/hkicert/js/script.js'></script>
+
+</body>
+</html>

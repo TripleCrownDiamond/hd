@@ -1,0 +1,318 @@
+{
+  "spartherm": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-28",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-28 by user in Claude Code session",
+    "notes": "First manufacturer scrape. Assets rehosted on Cloudinary only after admin review sets review_status=approved."
+  },
+  "hark": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Texts and images were already confirmed earlier; full scope incl. PDF per user statement 2026-07-31 (contract pending reference)."
+  },
+  "austroflamm": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "All product sources authorized on 2026-07-31."
+  },
+  "camina": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "All product sources authorized on 2026-07-31."
+  },
+  "jotul": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "All product sources authorized on 2026-07-31."
+  },
+  "maxblank": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "All product sources authorized on 2026-07-31."
+  },
+  "ofenkoppe": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "All product sources authorized on 2026-07-31."
+  },
+  "rika": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "All product sources authorized on 2026-07-31."
+  },
+  "skantherm": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "All product sources authorized on 2026-07-31."
+  },
+  "wodtke": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "All product sources authorized on 2026-07-31."
+  },
+  "ofen-de": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 3 aggregator — intended use: catalogue structure, filters and market price ranges."
+  },
+  "kaminofen-shop": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 3 aggregator — intended use: catalogue structure, filters and market price ranges."
+  },
+  "feuerdepot": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 3 aggregator — intended use: catalogue structure, filters and market price ranges."
+  },
+  "feuer-fuchs": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 3 aggregator — intended use: catalogue structure, filters and market price ranges."
+  },
+  "kaminofen-shop24h": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 3 aggregator — intended use: catalogue structure, filters and market price ranges."
+  },
+  "holzhof24": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 4 wood supplier."
+  },
+  "frankenbrennstoffe": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 4 wood supplier."
+  },
+  "holzmueller": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 4 wood supplier."
+  },
+  "jsm-brennholz": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 4 wood supplier."
+  },
+  "brennio": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 4 wood supplier."
+  },
+  "holzfront": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 4 wood supplier."
+  },
+  "kaminholz-berlin": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-07-31",
+    "scope": [
+      "specs",
+      "images",
+      "videos",
+      "pdf"
+    ],
+    "evidence": "chat statement 2026-07-31 by user in Claude Code session; written contract to be referenced later",
+    "notes": "Wave 4 wood supplier — Berlin zone useful for pilot."
+  },
+  "ecoreichholz": {
+    "authorized": true,
+    "granted_at": "2026-08-02",
+    "scope": [
+      "specs",
+      "images",
+      "pdf"
+    ],
+    "evidence": "user instruction 2026-08-02 in Claude Code session: \"CHERCHE DES PRODUITS QUI ONT LES DONNEES GRANULES\" — retailer catalogue sourced for pellet declarations; scope to confirm in writing with the shop"
+  },
+  "areiter": {
+    "authorized": true,
+    "granted_at": "2026-08-02",
+    "scope": [
+      "specs",
+      "images",
+      "pdf"
+    ],
+    "evidence": "user instruction 2026-08-02 in Claude Code session: \"CHERCHE DES PRODUITS QUI ONT LES DONNEES GRANULES\" — retailer catalogue sourced for pellet declarations; scope to confirm in writing with the shop"
+  },
+  "gruenwaren": {
+    "authorized": true,
+    "granted_at": "2026-08-02",
+    "scope": [
+      "specs",
+      "images",
+      "pdf"
+    ],
+    "evidence": "user instruction 2026-08-02 in Claude Code session: \"CHERCHE DES PRODUITS QUI ONT LES DONNEES GRANULES\" — retailer catalogue sourced for pellet declarations; scope to confirm in writing with the shop"
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "HOLZKRAFT Backend"
+  short_description: "Build secure commerce backend capabilities"
+  default_prompt: "Use $holzkraft-backend to implement the next HOLZKRAFT backend slice."

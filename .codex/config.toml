@@ -1,0 +1,33 @@
+personality = "pragmatic"
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+web_search = "live"
+
+[sandbox_workspace_write]
+network_access = true
+
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+enabled = true
+required = false
+default_tools_approval_mode = "auto"
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@latest"]
+enabled = true
+required = false
+default_tools_approval_mode = "auto"
+startup_timeout_sec = 60
+tool_timeout_sec = 90
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest", "--headless", "--isolated"]
+enabled = true
+required = false
+default_tools_approval_mode = "writes"
+startup_timeout_sec = 90
+tool_timeout_sec = 120
