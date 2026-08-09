@@ -42,3 +42,6 @@ tmp/
 .dev-server*.log
 .next-dev*.log
 .next-stale*/
+
+# TypeScript incremental build info
+tsconfig.tsbuildinfo
