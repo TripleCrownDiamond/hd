@@ -8,16 +8,24 @@ import { BRAND_NAME } from "@/lib/brand";
 import { getCompany } from "@/lib/company-server";
 import { getSiteSettings } from "@/lib/settings-server";
 
+/**
+ * Four columns of links, then everything else on centred horizontal rows.
+ *
+ * Every href here points at its canonical route. `/versand-und-zahlung` and
+ * `/widerrufsbelehrung` still redirect for the sake of old inbound links, but
+ * the footer should not spend a redirect hop on its own navigation.
+ */
 const footerSections = [
   {
     title: "Sortiment",
     links: [
       { label: "Brennholz", href: "/brennholz" },
       { label: "Stammholz & Meterholz", href: "/stammholz" },
-      { label: "Kaminöfen", href: "/kaminoefen" },
+      { label: "Anzündholz", href: "/anzuendholz" },
       { label: "Holzpellets", href: "/holzpellets" },
       { label: "Holzbriketts", href: "/holzbriketts" },
       { label: "Kohle & Grillkohle", href: "/kohle" },
+      { label: "Kaminöfen", href: "/kaminoefen" },
       { label: "Zubehör", href: "/zubehoer" },
     ],
   },
@@ -25,17 +33,18 @@ const footerSections = [
     title: "Service",
     links: [
       { label: "Liefergebiet prüfen", href: "/liefergebiet" },
-      { label: "Versand und Zahlung", href: "/versand-und-zahlung" },
+      { label: "Versand und Lieferung", href: "/versand" },
+      { label: "Zahlungsarten", href: "/zahlung" },
       { label: "Montage und Inbetriebnahme", href: "/montage-und-inbetriebnahme" },
       { label: "Bestellung verfolgen", href: "/bestellung/verfolgen" },
       { label: "FAQ", href: "/faq" },
-      { label: "Kontakt", href: "/kontakt" },
     ],
   },
   {
     title: "Unternehmen",
     links: [
       { label: "Über uns", href: "/ueber-uns" },
+      { label: "Kontakt", href: "/kontakt" },
       { label: "Ratgeber", href: "/ratgeber" },
     ],
   },
@@ -45,7 +54,7 @@ const footerSections = [
       { label: "Impressum", href: "/impressum" },
       { label: "Datenschutz", href: "/datenschutz" },
       { label: "AGB", href: "/agb" },
-      { label: "Widerrufsbelehrung", href: "/widerrufsbelehrung" },
+      { label: "Widerrufsbelehrung", href: "/widerruf" },
       { label: "Widerrufsformular", href: "/widerrufsformular" },
       { label: "Barrierefreiheit", href: "/barrierefreiheit" },
       { label: "Cookie-Einstellungen", href: "/cookie-einstellungen" },
@@ -56,19 +65,51 @@ const footerSections = [
 export async function Footer() {
   const settings = await getSiteSettings();
   // Same resolution the legal pages use — an admin edit wins, otherwise the
-  // details the company has confirmed in code. Without this the footer stayed
-  // blank on a database whose settings row has never been filled in.
+  // details the company has confirmed in code.
   const company = await getCompany();
-  const contact = {
-    phone: company.phone,
-    phoneSecondary: settings?.phone_secondary ?? null,
-    email: company.email,
-    supportEmail: company.supportEmail,
-  };
-  const hasAddress = Boolean(company.street || company.postalCode || company.city);
-  const hasContact = Boolean(
-    hasAddress || contact.phone || contact.phoneSecondary || contact.email || contact.supportEmail,
-  );
+
+  // One line, not a stacked block: the address used to sit in its own column
+  // under the link grid, which read as a stray fifth column.
+  const addressLine = [
+    company.name,
+    company.street,
+    [company.postalCode, company.city].filter(Boolean).join(" ") || null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const contactItems = [
+    addressLine ? { key: "address", Icon: MapPin, label: addressLine, href: null } : null,
+    company.phone
+      ? {
+          key: "phone",
+          Icon: Phone,
+          label: company.phone,
+          // tel: cannot carry spaces — strip them, keep the readable label.
+          href: `tel:${company.phone.replace(/\s+/g, "")}`,
+        }
+      : null,
+    settings?.phone_secondary
+      ? {
+          key: "phone2",
+          Icon: Phone,
+          label: settings.phone_secondary,
+          href: `tel:${settings.phone_secondary.replace(/\s+/g, "")}`,
+        }
+      : null,
+    company.email
+      ? { key: "email", Icon: Mail, label: company.email, href: `mailto:${company.email}` }
+      : null,
+    company.supportEmail
+      ? {
+          key: "support",
+          Icon: Mail,
+          label: company.supportEmail,
+          href: `mailto:${company.supportEmail}`,
+        }
+      : null,
+  ].filter((item): item is NonNullable<typeof item> => item !== null);
+
   const legalDetails = [
     company.vatId ? `USt-IdNr.: ${company.vatId}` : null,
     company.taxNumber ? `Steuernummer: ${company.taxNumber}` : null,
@@ -76,6 +117,7 @@ export async function Footer() {
     company.registerCourt ? `Registergericht: ${company.registerCourt}` : null,
     company.managingDirector ? `Geschäftsführung: ${company.managingDirector}` : null,
   ].filter((detail): detail is string => Boolean(detail));
+
   const socials = [
     [company.social.facebook, "Facebook", Facebook],
     [company.social.tiktok, "TikTok", TiktokIcon],
@@ -83,24 +125,35 @@ export async function Footer() {
     [company.social.linkedin, "LinkedIn", Linkedin],
     [company.social.youtube, "YouTube", Youtube],
   ] as const;
+  const activeSocials = socials.filter(([url]) => Boolean(url));
+
   return (
-    <footer className="border-t border-border bg-brand text-white" role="contentinfo">
-      <div className="container-site py-16">
-        {/* An uploaded logo wins; otherwise the drawn wordmark, knocked out on green. */}
-        {settings?.logo_url ? (
-          <Image src={settings.logo_url} alt={settings.company_name || BRAND_NAME} width={976} height={129} unoptimized className="mb-10 h-9 w-auto brightness-0 invert" />
-        ) : (
-          <Logo tone="mono" className="mb-10 h-9 w-auto text-white" />
-        )}
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="border-border bg-brand border-t text-white" role="contentinfo">
+      <div className="container-site py-14">
+        <div className="flex justify-center">
+          {settings?.logo_url ? (
+            <Image
+              src={settings.logo_url}
+              alt={settings.company_name || BRAND_NAME}
+              width={976}
+              height={129}
+              unoptimized
+              className="mb-10 h-8 w-auto brightness-0 invert"
+            />
+          ) : (
+            <Logo tone="mono" className="mb-10 h-7 w-auto text-white sm:h-8" />
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-4">
           {footerSections.map((section) => (
             <div key={section.title}>
-              <h3 className="mb-4 font-display text-sm font-semibold uppercase tracking-wider text-white/80">
+              <h3 className="font-display mb-4 text-sm font-semibold tracking-wider text-white/80 uppercase">
                 {section.title}
               </h3>
               <ul className="space-y-2.5">
                 {section.links.map((link) => (
-                  <li key={link.label}>
+                  <li key={link.href}>
                     <Link
                       href={link.href}
                       className="text-sm text-white/70 transition-colors hover:text-white"
@@ -114,77 +167,69 @@ export async function Footer() {
           ))}
         </div>
 
-        {/* Contact & Payment */}
-        {(hasContact || settings?.newsletter_enabled || socials.some(([url]) => Boolean(url))) ? <div className="mt-12 grid grid-cols-1 gap-8 border-t border-white/10 pt-8 lg:grid-cols-2">
-          {/* Contact */}
-          {hasContact ? <div>
-            <h3 className="mb-4 font-display text-sm font-semibold uppercase tracking-wider text-white/80">
-              Kontakt
-            </h3>
-            <ul className="space-y-3 text-sm text-white/70">
-              {hasAddress ? <li className="flex items-start gap-2">
-                <MapPin className="mt-0.5 size-4 shrink-0" />
-                <span>
-                  {company.name}<br />
-                  {company.street}<br />
-                  {[company.postalCode, company.city].filter(Boolean).join(" ")}
-                </span>
-              </li> : null}
-              {contact.phone ? <li className="flex items-center gap-2">
-                <Phone className="size-4 shrink-0" />
-                {/* tel: cannot carry spaces — strip them, keep the readable label. */}
-                <a href={`tel:${contact.phone.replace(/\s+/g, "")}`} className="hover:text-white">{contact.phone}</a>
-              </li> : null}
-              {contact.phoneSecondary ? <li className="flex items-center gap-2">
-                <Phone className="size-4 shrink-0" />
-                <a href={`tel:${contact.phoneSecondary.replace(/\s+/g, "")}`} className="hover:text-white">{contact.phoneSecondary}</a>
-              </li> : null}
-              {contact.email ? <li className="flex items-center gap-2">
-                <Mail className="size-4 shrink-0" />
-                <a href={`mailto:${contact.email}`} className="hover:text-white">{contact.email}</a>
-              </li> : null}
-              {contact.supportEmail ? <li className="flex items-center gap-2">
-                <Mail className="size-4 shrink-0" />
-                <a href={`mailto:${contact.supportEmail}`} className="hover:text-white">{contact.supportEmail}</a>
-              </li> : null}
-            </ul>
-            <div className="mt-4 flex gap-2">{socials.map(([url,label,Icon]) => url ? <a key={label} href={url} target="_blank" rel="noreferrer noopener" aria-label={label} className="rounded-md border border-white/20 p-2 hover:bg-white/10"><Icon className="size-4" /></a> : null)}</div>
-          </div> : null}
+        {/* Contact: one centred, wrapping row rather than a fifth column. */}
+        {contactItems.length > 0 && (
+          <ul className="mt-12 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 border-t border-white/10 pt-8 text-sm text-white/70">
+            {contactItems.map((item) => (
+              <li key={item.key} className="flex items-center gap-2">
+                <item.Icon className="size-4 shrink-0" aria-hidden="true" />
+                {item.href ? (
+                  <a href={item.href} className="transition-colors hover:text-white">
+                    {item.label}
+                  </a>
+                ) : (
+                  <span>{item.label}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
 
-          {/* Newsletter */}
-          {settings?.newsletter_enabled ? <div>
-            <h3 className="mb-4 font-display text-sm font-semibold uppercase tracking-wider text-white/80">
+        {activeSocials.length > 0 && (
+          <div className="mt-6 flex justify-center gap-2">
+            {activeSocials.map(([url, label, Icon]) => (
+              <a
+                key={label}
+                href={url as string}
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label={label}
+                className="rounded-md border border-white/20 p-2 transition-colors hover:bg-white/10"
+              >
+                <Icon className="size-4" />
+              </a>
+            ))}
+          </div>
+        )}
+
+        {settings?.newsletter_enabled && (
+          <div className="mx-auto mt-10 max-w-md border-t border-white/10 pt-8 text-center">
+            <h3 className="font-display mb-2 text-sm font-semibold tracking-wider text-white/80 uppercase">
               Newsletter
             </h3>
             <p className="mb-4 text-sm text-white/70">
               Tipps rund um Holz, Wärme und Kaminöfen.
             </p>
             <FooterNewsletter />
-          </div> : null}
-        </div> : null}
+          </div>
+        )}
       </div>
 
-      {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="container-site flex flex-col items-center justify-between gap-4 py-6 text-xs text-white/50 sm:flex-row">
+        {/* Extra bottom padding on small screens: the floating WhatsApp button
+            sits in this corner and was covering the last line. */}
+        <div className="container-site flex flex-col items-center gap-2 pt-6 pb-24 text-center text-xs text-white/50 sm:pb-6">
+          {legalDetails.length > 0 && (
+            <p className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+              {legalDetails.map((detail) => (
+                <span key={detail}>{detail}</span>
+              ))}
+            </p>
+          )}
           <p>
-            &copy; {new Date().getFullYear()} {settings?.company_name || BRAND_NAME}. Alle Preise inkl.
-            gesetzlicher MwSt. zzgl. Versandkosten.
+            &copy; {new Date().getFullYear()} {company.name}. Alle Preise inkl. gesetzlicher MwSt.
+            zzgl. Versandkosten.
           </p>
-          {legalDetails.length > 0 ? <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 sm:justify-start">
-            {legalDetails.map((detail) => <span key={detail}>{detail}</span>)}
-          </div> : null}
-          <div className="flex gap-4">
-            <Link href="/impressum" className="hover:text-white/80">
-              Impressum
-            </Link>
-            <Link href="/datenschutz" className="hover:text-white/80">
-              Datenschutz
-            </Link>
-            <Link href="/agb" className="hover:text-white/80">
-              AGB
-            </Link>
-          </div>
         </div>
       </div>
     </footer>
