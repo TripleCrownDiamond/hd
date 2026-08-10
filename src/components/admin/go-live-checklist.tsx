@@ -18,6 +18,27 @@ interface Blocker {
 }
 
 /**
+ * Published legal-page slugs. Advisory only: a transient Supabase failure
+ * degrades to an empty list instead of taking the admin dashboard down.
+ */
+async function readPublishedContentSlugs(): Promise<string[]> {
+  try {
+    const { data } = await getMigrationAwarePublicSupabase()
+      .from("content_entries")
+      .select("slug,status")
+      .in(
+        "slug",
+        LEGAL_DEFAULTS.map((entry) => entry.slug),
+      );
+    return (data ?? [])
+      .filter((row) => row.status === "published")
+      .map((row) => String(row.slug).toLowerCase());
+  } catch {
+    return [];
+  }
+}
+
+/**
  * The things that stop a customer from completing an order, in one place.
  *
  * Each of these fails silently somewhere else: an empty `payment_settings`
@@ -26,27 +47,19 @@ interface Blocker {
  * who never visits those pages has no way to know the shop cannot sell.
  */
 export async function GoLiveChecklist() {
-  const [company, paymentOptions, contentResult, mail] = await Promise.all([
+  const [company, paymentOptions, published, mail] = await Promise.all([
     getCompany(),
     getPaymentOptions().catch(() => []),
-    getMigrationAwarePublicSupabase()
-      .from("content_entries")
-      .select("slug,status")
-      .in(
-        "slug",
-        LEGAL_DEFAULTS.map((entry) => entry.slug),
-      ),
+    // The whole checklist is advisory: a transient Supabase failure must not
+    // take the admin dashboard down with it, so every read here degrades.
+    readPublishedContentSlugs(),
     // Actually opens the connection and authenticates — a wrong password shows
     // up here rather than in a customer's missing confirmation.
     verifyEmailTransport().catch(() => ({ ok: false, detail: "Prüfung fehlgeschlagen." })),
   ]);
 
-  const published = new Set(
-    (contentResult.data ?? [])
-      .filter((row) => row.status === "published")
-      .map((row) => String(row.slug).toLowerCase()),
-  );
-  const unpublishedLegal = LEGAL_DEFAULTS.filter((entry) => !published.has(entry.slug));
+  const publishedSet = new Set(published);
+  const unpublishedLegal = LEGAL_DEFAULTS.filter((entry) => !publishedSet.has(entry.slug));
   const missingCompany = missingMandatoryFields(company);
 
   const blockers: Blocker[] = [
