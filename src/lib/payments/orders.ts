@@ -4,9 +4,16 @@ import { z } from "zod";
 import { getMigrationAwareServiceSupabase } from "@/lib/db/server";
 import { lookupPostcode } from "@/lib/shipping/postcodes";
 import { zoneForPostcode } from "@/lib/shipping/zones";
+import { countryLabel, isEuropeanCountry } from "@/lib/shipping/countries";
 import { quoteShipping, type ShippingClass } from "@/lib/shipping/rates";
 import { readPaymentSettings } from "./server";
-import { paymentReference, toPaymentOptions, PAYMENT_LABEL, type PaymentMethod } from "./config";
+import {
+  isPlaceholderBankData,
+  paymentReference,
+  toPaymentOptions,
+  PAYMENT_LABEL,
+  type PaymentMethod,
+} from "./config";
 import { notifyOrderPlaced } from "@/lib/notifications/orders";
 import { maybeIssueInvoice } from "@/lib/invoices/auto";
 import { evaluatePromotion, PromotionError } from "@/lib/promotions/server";
@@ -36,8 +43,9 @@ const addressSchema = z.object({
   lastName: z.string().trim().min(2).max(80),
   street: z.string().trim().min(3).max(120),
   houseNumber: z.string().trim().min(1).max(20),
-  postcode: z.string().trim().regex(/^\d{5}$/),
+  postcode: z.string().trim().min(3).max(10).regex(/^[A-Za-z0-9 -]+$/),
   city: z.string().trim().min(2).max(120),
+  country: z.string().trim().length(2).regex(/^[A-Z]{2}$/),
   email: z.string().trim().email(),
   phone: z.string().trim().min(5).max(40),
 });
@@ -147,13 +155,22 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
     throw new OrderError("Diese Zahlungsart ist nicht verfügbar.", 409);
   }
 
-  const place = lookupPostcode(input.address.postcode);
-  if (!place) {
-    throw new OrderError("Die Lieferadresse liegt außerhalb Deutschlands.", 409);
+  // The shop delivers across Europe; only the configured country set is
+  // accepted, and a German address still needs a 5-digit postcode.
+  if (!isEuropeanCountry(input.address.country)) {
+    throw new OrderError("Dieses Land wird nicht beliefert.", 409);
+  }
+  if (input.address.country === "DE" && !/^\d{5}$/.test(input.address.postcode)) {
+    throw new OrderError("Ungültige deutsche Postleitzahl.", 409);
   }
 
+  // The postcode directory is advisory, not a gate: a postcode it does not
+  // know (foreign or very new) still ships at the standard tariff and keeps
+  // the city the customer typed.
+  const place = input.address.country === "DE" ? lookupPostcode(input.address.postcode) : null;
+
   const { lines, subtotalCents } = await repriceLines(input.items);
-  const zone = zoneForPostcode(input.address.postcode);
+  const zone = input.address.country === "DE" ? zoneForPostcode(input.address.postcode) : "mainland";
   let promotion;
   try {
     promotion = await evaluatePromotion(input.promotionCode, lines.map((line) => ({
@@ -190,9 +207,10 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
     street: input.address.street,
     house_number: input.address.houseNumber,
     postcode: input.address.postcode,
-    city: place.city,
-    state: place.state,
-    country_code: "DE",
+    city: place?.city ?? input.address.city,
+    state: place?.state ?? null,
+    country_code: input.address.country,
+    country_name: countryLabel(input.address.country),
     email: input.address.email,
     phone: input.address.phone,
   };
@@ -200,6 +218,29 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
   const reference =
     input.paymentMethod === "bank_transfer"
       ? paymentReference(settings?.bank_reference_prefix ?? null, number)
+      : null;
+
+  // Only a real account goes into the confirmation e-mail: the seeded
+  // placeholder must never be mailed to a customer (the e-mail then says the
+  // details follow separately).
+  const bankForEmail =
+    input.paymentMethod === "bank_transfer" && settings?.bank_iban && settings?.bank_account_holder
+      ? {
+          accountHolder: settings.bank_account_holder,
+          iban: settings.bank_iban,
+          bic: settings.bank_bic,
+        }
+      : null;
+  const mailBank =
+    bankForEmail &&
+    !isPlaceholderBankData({
+      method: "bank_transfer",
+      accountHolder: bankForEmail.accountHolder,
+      iban: bankForEmail.iban,
+      bic: bankForEmail.bic,
+      bankName: settings?.bank_name ?? null,
+    })
+      ? bankForEmail
       : null;
 
   const { data: order, error } = await supabase
@@ -283,19 +324,13 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
       totalCents,
       paymentLabel: PAYMENT_LABEL[input.paymentMethod],
       paymentReference: reference,
-      bank:
-        input.paymentMethod === "bank_transfer" && settings?.bank_iban && settings?.bank_account_holder
-          ? {
-              accountHolder: settings.bank_account_holder,
-              iban: settings.bank_iban,
-              bic: settings.bank_bic,
-            }
-          : null,
+      bank: mailBank,
       address: {
         street: input.address.street,
         houseNumber: input.address.houseNumber,
         postcode: input.address.postcode,
-        city: place.city,
+        city: place?.city ?? input.address.city,
+        country: countryLabel(input.address.country),
       },
     },
     input.address.email,

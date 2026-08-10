@@ -1,6 +1,93 @@
 # État du projet
 
-Dernière mise à jour : 2 août 2026
+Dernière mise à jour : 10 août 2026
+
+## Catalogue BRIE Brennholz importé, prix des grumes corrigés, −40 % — 10 août
+
+- **Import complet de bri-brennholz.com** : 134 produits (47 bois, 30 pellets,
+  24 poêles, 15 briquettes, 8 grumes, 4 charbon, 4 autres) scrapés, images
+  publiées sur ImageKit (350 uploads via téléchargement local puis buffer — le
+  site bloque le hotlinking d'ImageKit) et importés en base Supabase sous la
+  marque « BRIE Brennholz » (`source: bri-brennholz`). Aucun doublon.
+- **Correction des prix des grumes (Stammholz)** : le site saisit ces prix en
+  centimes mais les affiche en euros (58 500,00 € pour 25 Rm est économique-
+  ment impossible). Après ÷100 : Birke 585 € / 25 Rm, Buche 720 €, Eiche
+  770 €, Fichte/Kiefer 500 € — cohérent avec le marché du Stammholz en vrac
+  et l'ordre des essences devient logique. Documenté dans la licence et le
+  scraper (ADR-018).
+- **Réduction globale −40 %** appliquée à tous les prix importés (instruction
+  exploitant du 10 août 2026), en plus de la correction ÷100 des grumes.
+- **4 produits affichent 0,00 € sur le site** (prix non publié) : importés en
+  `quote_mode` (sur devis), pas à 0 €.
+- **Migrations appliquées à la base hébergée** : `…0012` (sales unit),
+  `…0013` (kind `log`), `…0014` (catégorie `stammholz`), `…0015` (site
+  settings TikTok). La section Stammholz de la home lit désormais la base
+  (`getPublishedCardProducts("log")`) ; les 6 grumes fictives de
+  `src/lib/fixtures.ts` et le composant `stammholz-card.tsx` ont été
+  supprimés (plus aucun doublon). Les fiches produit log sont servies par
+  `getWoodProductBySlug` (kind `log` ajouté) avec un breadcrumb Stammholz.
+- **Statut en base** : les 134 produits bri sont en `pending` — la publication
+  reste une décision humaine dans l'admin (workflow AGENTS.md), comme pour
+  toutes les sources importées. La section Stammholz de la home restera vide
+  tant que les 8 grumes ne sont pas approuvées dans l'admin.
+- Validation : typecheck, ESLint et 128 tests verts.
+
+## Livraison dans toute l'Europe, admin en français et responsive — 10 août
+
+- **Livraison Europe** : la caisse propose un sélecteur des 47 pays
+  d'Europe (`src/lib/shipping/countries.ts`), le devis applique le tarif
+  continental unique (69 € Spedition palette, 89 € hayon poêles), le pays est
+  stocké sur la commande (`country_code`/`country_name`) et repris dans les
+  e-mails. La vérification de PLZ ne s'applique qu'à l'Allemagne ; une PLZ
+  étrangère ou inconnue part au tarif standard sans blocage (ADR-017).
+- **Cause racine du « checkout ne passe pas » trouvée** : la migration
+  `…0011` (promotions/factures/FAQ/relance panier) n'avait jamais été
+  appliquée à la base hébergée — les colonnes `orders.discount_cents` et
+  `order_items.discount_cents` manquaient, donc toute insertion de commande
+  échouait. Migration appliquée (tables promotions, faq_entries,
+  abandoned_carts, conversations, invoice_sequences, notification_jobs +
+  colonnes) ; commande vers Paris vérifiée de bout en bout (600 € + 69 € port
+  = 669 €, référence `HK-2026-000001`), puis supprimée.
+- **Admin en français** : layout, dashboard, commandes, produits, clients,
+  factures, promotions, FAQ/chat, pages, avis, paiements, réglages et
+  composants (checklist go-live, éditeur de contenu, champs prix) traduits ;
+  messages d'erreur des actions traduits.
+- **Admin responsive** : sidebar latérale `lg:` avec navigation horizontale
+  scrollable en mobile, `min-w-0` + `overflow-x-hidden` sur le main, cartes en
+  `flex-wrap` ; vérifié à 717 px sans débordement.
+- Validation : typecheck, ESLint et build production verts, tests verts
+  (128, dont 2 tests d'éditeur mis à jour pour le français).
+
+### Question ouverte : TVA sur les ventes hors Allemagne
+
+`orders.ts` calcule la TVA à 19 % allemande pour toutes les destinations et
+l'écrit en `tax_rate: 19` sur chaque ligne. Pour l'UE, tant que le seuil de
+vente à distance (10 000 €/an) n'est pas dépassé, la TVA allemande s'applique
+— défendable. Pour les destinations hors UE (CH, GB, NO, IS, TR, UA, Caucase,
+micro-États), le traitement fiscal et douanier diffère : à valider avec le
+conseiller fiscal avant la première vente réelle hors UE, puis décider si le
+sélecteur doit être restreint à l'UE/EEE ou si un régime OSS/export est mis en
+place. Aucune décision fiscale n'a été inventée.
+
+## Caisse débloquée, virement par défaut, connexion admin — 10 août
+
+- **Code postal** : la vérification ne bloque plus. Une PLZ inconnue affiche un
+  avertissement et facture le port continental standard (`/api/lieferung`
+  renvoie le devis dans la réponse `unknown`) ; la comparaison ville-vs-PLZ
+  n'est plus une erreur bloquante ; `placeOrder` accepte une PLZ hors
+  répertoire avec la ville saisie. Seul le format 5 chiffres reste exigé
+  (client et serveur). Décision : ADR-016.
+- **Moyen de paiement** : Überweisung activée par défaut avec un compte
+  placeholder explicite (migration `…0016`, appliquée). Éditable dans l'admin
+  ; bannière tant que le placeholder est en place. Le placeholder n'est jamais
+  montré aux clients (confirmation et e-mail : « Kontodaten per E-Mail »).
+- **Connexion** : le formulaire `/konto/anmelden` appelle réellement
+  `signInWithPassword` et redirige vers `?next=` ; vérifié de bout en bout
+  jusqu'au dashboard `/admin`.
+- **Liens morts** : retirés du login, de la sidebar et de la page compte, et de
+  l'accueil (`/ofenberatung` → `/ratgeber`).
+- Validation : typecheck, ESLint et 134 tests verts (10 nouveaux sur le
+  placeholder bancaire) ; parcours caisse et admin vérifiés au navigateur.
 
 ## Moyens de paiement et création de commande — 2 août
 

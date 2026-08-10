@@ -132,7 +132,9 @@ export function CartView() {
   // Shipping is only known once a postcode is: the summary says so rather than
   // showing a figure that the checkout would then contradict.
   const { result } = useDelivery();
-  const quote = result?.ok ? result.shipping : null;
+  // The API answers an unknown postcode with the standard-tariff quote, so the
+  // summary can still show a shipping figure instead of an empty placeholder.
+  const quote = result?.shipping ?? null;
   const totalCents = subtotalCents + (quote?.totalCents ?? 0);
 
   if (!hydrated) return <CartPageLoading />;

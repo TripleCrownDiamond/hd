@@ -175,6 +175,84 @@
 - Réexamen : lorsque les fournisseurs exposeront un rôle de média fiable ou
   qu'une revue visuelle humaine aura validé les cas restants.
 
+## ADR-016 — Le code postal n'est plus un blocage à la caisse
+
+- Statut : accepté
+- Décision : un code postal inconnu du répertoire allemand n'empêche plus de
+  commander : la caisse affiche un avertissement et calcule le port au tarif
+  continental standard ; la ville saisie est conservée. La vérification
+  ville-vs-PLZ n'est plus une erreur bloquante (seul le format 5 chiffres
+  reste exigé).
+- Pourquoi : demandé explicitement par l'exploitant (« retire ce blocage
+  partout sur checkout ») ; l'autofill navigateur et les PLZ étrangères
+  bloquaient des commandes légitimes en fin de parcours.
+- Conséquences : une PLZ hors répertoire part au tarif continental ; le
+  placeholder bancaire et la bannière admin signalent ce qui reste à
+  configurer avant le live.
+- Réexamen : dès que des commandes hors périmètre apparaissent ou que la
+  livraison hors Allemagne est réellement proposée.
+
+## ADR-017 — Livraison dans toute l'Europe, un seul tarif continental
+
+- Statut : accepté
+- Décision : la caisse propose les 47 pays d'Europe dans un sélecteur
+  (`src/lib/shipping/countries.ts`). Tout pays européen est accepté ; la
+  vérification de PLZ et le zonage allemand ne s'appliquent qu'à l'Allemagne.
+  Le pays est stocké sur la commande (`country_code`/`country_name`) et repris
+  dans les e-mails et la confirmation.
+- Pourquoi : l'exploitant livre désormais dans tous les pays voisins
+  (« tout les pays envirronnat ») ; l'Allemagne seule ne correspond plus au
+  périmètre commercial.
+- Conséquences : tarif unique continental comme en Allemagne (69 € palette,
+  89 € hayon poêles) pour tous les pays ; pas de surcoût île hors Allemagne
+  tant que les transporteurs n'en exigent pas. Page `/liefergebiet` et note de
+  caisse mises en cohérence.
+- Réexamen : dès qu'un transporteur impose des tarifs différenciés par pays ou
+  que des commandes hors Europe arrivent.
+
+## ADR-018 — Prix des grumes bri-brennholz corrigés (centimes → euros) et −40 % global
+
+- Statut : accepté
+- Décision : pour les 8 grumes (Stammholz) de bri-brennholz.com, le prix
+  JSON-LD et le tableau `km-variants` sont saisis en centimes mais rendus en
+  euros par le site (ex. 58 500,00 € pour 25 Rm). Le scraper divise donc par
+  100 (`correctLogPriceCents`), puis applique la réduction globale de 40 %
+  demandée par l'exploitant le 10 août 2026 (identique aux 130 autres
+  produits du même catalogue).
+- Pourquoi : 58 500 € pour 25 Rm (~2 340 €/Rm) est économiquement impossible
+  pour du bois rond brut — le même site vend son bois fendu séché à ~200 €/Rm.
+  Après ÷100, Birke 585 € / 25 Rm (23,40 €/Rm) est cohérent avec le marché et
+  l'ordre des essences (Eiche 770 € > Buche 720 € > Birke 585 € > Fichte/
+  Kiefer 500 €) devient logique. La correction est documentée dans
+  `data/licenses.json` et l'en-tête du scraper.
+- Conséquences : les prix publiés en base sont donc `(prix site ÷ 100) × 0,6`
+  pour les grumes et `prix site × 0,6` pour le reste du catalogue. Les 4
+  produits affichés à 0,00 € sur le site sont importés en `quote_mode`.
+- Réexamen : si l'exploitant confirme un jour que les prix du site sont bien
+  en euros, la correction ÷100 devra être retirée et les prix réimportés.
+
+## ADR-019 — Prix des combustibles = référence marché − 40 %
+
+- Statut : accepté
+- Décision : pour les combustibles (bois, grumes, pellets, briquettes) dont le
+  prix sort de la fourchette de marché, le prix est recalculé à la référence
+  marché 2026 **moins 40 %** (instruction exploitant du 10 août 2026 : « prix
+  référence marché moins 40 % »). Références retenues : bois 180 €/Rm,
+  100 €/SRM, 120 €/m³ ; grumes 35 €/Rm ; pellets/briquettes 400 €/t. Les prix
+  déjà dans la bande ±(0,6×..1,8×) de la cible restent intacts. 67 produits
+  corrigés le 10 août 2026 (`scripts/_tmp-price-fix.mjs`).
+- Pourquoi : le catalogue mélangeait des prix de revendeurs très hétérogènes
+  (pellets à 190 €/t comme à 500 €/t) et des quantités mal dérivées (« 15 kg »
+  pour une palette de 66 sacs) qui faisaient lire des prix absurdes. La règle
+  unique aligne la boutique sur un positionnement cohérent « marché − 40 % ».
+- Conséquences : charbon et allume-feu exclus (trop hétérogènes) ; petits
+  conditionnements (< 400 kg) et camions sans volume total explicite exclus ;
+  produits rejetés non touchés. Une ré-importation d'une source réécrit les
+  prix des produits concernés : le script devra être relancé après chaque
+  import tant que la règle reste en vigueur.
+- Réexamen : dès que les prix fournisseurs réels sont ré-importés ou que
+  l'exploitant ajuste le positionnement.
+
 ## Modèle pour une nouvelle décision
 
 ```text
@@ -185,6 +263,41 @@
 - Conséquences :
 - Réexamen :
 ```
+# 2026-08-10 — Livraison Europe, admin en français, migrations appliquées
+
+- Livraison dans les 47 pays d'Europe : sélecteur de pays à la caisse, tarif
+  continental unique, pays stocké sur la commande et repris dans les e-mails
+  (ADR-017). La page `/liefergebiet` et la note de caisse sont mises en
+  cohérence.
+- L'admin est entièrement en français (toutes les pages et composants) et
+  responsive : sidebar `lg:`, navigation mobile scrollable, plus aucun
+  débordement horizontal.
+- **Cause racine du « checkout ne passe pas »** : la migration `…0011`
+  (promotions, factures, FAQ, relance panier) n'avait jamais été appliquée à
+  la base hébergée ; les colonnes `discount_cents` sur `orders` et
+  `order_items` manquaient, donc toute insertion de commande échouait. La
+  migration a été appliquée ; une commande vers Paris (600 € + 69 € = 669 €)
+  a été vérifiée de bout en bout puis supprimée.
+
+# 2026-08-10 — Caisse, paiement virement, connexion admin et liens morts
+
+- La caisse ne bloque plus sur le code postal : PLZ inconnue → avertissement +
+  devis standard, ville non re-contrôlée, seul le format 5 chiffres reste
+  obligatoire (client et serveur). `POST /api/lieferung` renvoie le devis de
+  secours dans la réponse `unknown`.
+- Le virement (Überweisung) est activé par défaut avec un compte placeholder
+  explicite (`DE00…`, « Bitte in der Verwaltung hinterlegen »), éditable dans
+  l'admin. Le placeholder n'est jamais montré aux clients : confirmation et
+  e-mails disent « Kontodaten per E-Mail ». Bannière d'avertissement dans
+  l'admin tant que le placeholder est présent. Migration `…0016` appliquée sur
+  la base hébergée.
+- Le formulaire de connexion appelle réellement Supabase (`signInWithPassword`)
+  et redirige vers `?next=` — la connexion admin fonctionne de bout en bout.
+- Liens morts retirés : `/konto/registrieren`, `/konto/passwort-vergessen`
+  (login), `/konto/bestellungen`, `/konto/adressen`, `/konto/einstellungen`
+  (sidebar et page compte), `/sendungsverfolgung` (remplacé par
+  `/bestellung/verfolgen`), `/ofenberatung` (remplacé par `/ratgeber`).
+
 # 2026-08-02 — Promotions, factures, assistant et paniers abandonnés
 
 - Les remises sont toujours recalculées côté serveur. Les pourcentages sont stockés en points de base, les montants en centimes EUR, et la remise est ventilée sans erreur d'arrondi sur les lignes éligibles.

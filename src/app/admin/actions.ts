@@ -71,7 +71,7 @@ export async function saveProduct(formData: FormData) {
     ? supabase.from("products").update(safeValues).eq("id", id).select("id").single()
     : supabase.from("products").insert(safeValues).select("id").single();
   const { data, error } = await query;
-  if (error) throw new Error("Produkt konnte nicht gespeichert werden.");
+  if (error) throw new Error("Le produit n'a pas pu être enregistré.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "product.update" : "product.create", entity: "product", entityId: data.id });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
 }
@@ -81,7 +81,7 @@ export async function archiveProduct(formData: FormData) {
   const id = idSchema.parse(formData.get("id"));
   const supabase = await getMigrationAwareServerSupabase();
   const { error } = await supabase.from("products").update({ is_published: false, review_status: "superseded" }).eq("id", id);
-  if (error) throw new Error("Produkt konnte nicht archiviert werden.");
+  if (error) throw new Error("Le produit n'a pas pu être archivé.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "product.archive", entity: "product", entityId: id });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
 }
@@ -117,7 +117,7 @@ export async function updateOrder(formData: FormData) {
   if (status === "delivered") patch.delivered_at = now;
 
   const { error } = await supabase.from("orders").update(patch).eq("id", id);
-  if (error) throw new Error("Bestellung konnte nicht aktualisiert werden.");
+  if (error) throw new Error("La commande n'a pas pu être mise à jour.");
 
   await supabase.from("order_events").insert({
     order_id: id,
@@ -172,7 +172,7 @@ export async function saveContent(formData: FormData) {
   const supabase = await getMigrationAwareServerSupabase();
   const query = id ? supabase.from("content_entries").update(payload).eq("id", id).select("id").single() : supabase.from("content_entries").insert(payload).select("id").single();
   const { data, error } = await query;
-  if (error) throw new Error("Inhalt konnte nicht gespeichert werden.");
+  if (error) throw new Error("Le contenu n'a pas pu être enregistré.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "content.update" : "content.create", entity: "content", entityId: data.id });
   revalidatePath("/admin/inhalte"); revalidatePath(`/${values.slug}`);
 }
@@ -196,7 +196,7 @@ export async function seedLegalContent() {
       "slug",
       LEGAL_DEFAULTS.map((entry) => entry.slug),
     );
-  if (readError) throw new Error("Vorhandene Inhalte konnten nicht gelesen werden.");
+  if (readError) throw new Error("Les contenus existants n'ont pas pu être lus.");
 
   const taken = new Set((existing ?? []).map((row) => String(row.slug).toLowerCase()));
   const missing = LEGAL_DEFAULTS.filter((entry) => !taken.has(entry.slug));
@@ -220,7 +220,7 @@ export async function seedLegalContent() {
       author_id: actor.userId,
     })),
   );
-  if (error) throw new Error("Rechtstexte konnten nicht angelegt werden.");
+  if (error) throw new Error("Les textes juridiques n'ont pas pu être créés.");
 
   await auditAdminAction({
     ...actor,
@@ -265,7 +265,7 @@ export async function saveReview(formData: FormData) {
     ? supabase.from("reviews").update(values).eq("id", id).select("id").single()
     : supabase.from("reviews").insert(values).select("id").single();
   const { data, error } = await query;
-  if (error) throw new Error("Bewertung konnte nicht gespeichert werden.");
+  if (error) throw new Error("L'avis n'a pas pu être enregistré.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "review.update" : "review.create", entity: "review", entityId: data.id });
   revalidatePath("/admin/bewertungen"); revalidatePath("/", "layout");
 }
@@ -275,7 +275,7 @@ export async function deleteReview(formData: FormData) {
   const id = idSchema.parse(formData.get("id"));
   const supabase = await getMigrationAwareServerSupabase();
   const { error } = await supabase.from("reviews").delete().eq("id", id);
-  if (error) throw new Error("Bewertung konnte nicht gelöscht werden.");
+  if (error) throw new Error("L'avis n'a pas pu être supprimé.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "review.delete", entity: "review", entityId: id });
   revalidatePath("/admin/bewertungen"); revalidatePath("/", "layout");
 }
@@ -304,7 +304,7 @@ export async function saveSiteSettings(formData: FormData) {
     for (const column of OPTIONAL_SETTINGS_COLUMNS) delete (reduced as Record<string, unknown>)[column];
     ({ error } = await supabase.from("site_settings").update(reduced).eq("id", 1));
   }
-  if (error) throw new Error("Einstellungen konnten nicht gespeichert werden.");
+  if (error) throw new Error("Les réglages n'ont pas pu être enregistrés.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "settings.update", entity: "site_settings", entityId: "1" });
   // Legal pages read the company details through the shortcode cache; without
   // this an address change takes up to a minute to appear.
@@ -324,7 +324,7 @@ const ibanShape = z
   .trim()
   .transform((value) => value.replace(/\s+/g, "").toUpperCase())
   .refine((value) => value === "" || /^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(value), {
-    message: "IBAN ungültig.",
+    message: "IBAN invalide.",
   });
 
 export async function savePaymentSettings(formData: FormData) {
@@ -346,13 +346,13 @@ export async function savePaymentSettings(formData: FormData) {
   // A method cannot be switched on without what it needs to take a payment,
   // otherwise the checkout would offer a dead end.
   if (bankEnabled && (!iban || !text.bank_account_holder)) {
-    throw new Error("Für Überweisung sind IBAN und Kontoinhaber erforderlich.");
+    throw new Error("Le virement nécessite un IBAN et un titulaire de compte.");
   }
   if (cardEnabled && (!text.card_provider || !text.card_publishable_key)) {
-    throw new Error("Für Kartenzahlung sind Anbieter und Publishable Key erforderlich.");
+    throw new Error("Le paiement par carte nécessite un prestataire et une clé publishable.");
   }
   if (cryptoEnabled && (!text.crypto_provider || currencies.length === 0)) {
-    throw new Error("Für Krypto sind Anbieter und mindestens eine Währung erforderlich.");
+    throw new Error("Le paiement en crypto nécessite un prestataire et au moins une devise.");
   }
 
   const supabase = await getMigrationAwareServerSupabase();
@@ -368,7 +368,7 @@ export async function savePaymentSettings(formData: FormData) {
       updated_by: actor.userId,
     })
     .eq("id", 1);
-  if (error) throw new Error("Zahlungseinstellungen konnten nicht gespeichert werden.");
+  if (error) throw new Error("Les moyens de paiement n'ont pas pu être enregistrés.");
 
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "payment_settings.update", entity: "payment_settings", entityId: "1" });
   // The Zahlungsarten page renders the IBAN through a shortcode.
@@ -404,13 +404,13 @@ export async function savePromotion(formData: FormData) {
     starts_at: formData.get("starts_at"), ends_at: formData.get("ends_at"), is_active: formData.get("is_active") === "on",
   });
   const storedValue = input.discount_type === "percentage" ? Math.round(input.discount_value * 100) : Math.round(input.discount_value);
-  if (input.discount_type === "percentage" && storedValue > 10_000) throw new Error("Der prozentuale Rabatt darf 100 % nicht überschreiten.");
+  if (input.discount_type === "percentage" && storedValue > 10_000) throw new Error("La remise en pourcentage ne peut pas dépasser 100 %.");
   const { id, ...rest } = input;
   const supabase = await getMigrationAwareServerSupabase();
   const payload = { ...rest, discount_value: storedValue, created_by: actor.userId };
   const query = id ? supabase.from("promotions").update(payload).eq("id", id).select("id").single() : supabase.from("promotions").insert(payload).select("id").single();
   const { data, error } = await query;
-  if (error || !data) throw new Error("Rabatt konnte nicht gespeichert werden.");
+  if (error || !data) throw new Error("La remise n'a pas pu être enregistrée.");
   const promotionId = data.id as string;
   await Promise.all([
     supabase.from("promotion_products").delete().eq("promotion_id", promotionId),
@@ -418,9 +418,9 @@ export async function savePromotion(formData: FormData) {
   ]);
   if (input.scope === "products") {
     const ids = formData.getAll("product_ids").map(String);
-    if (!ids.length) throw new Error("Mindestens ein Produkt auswählen.");
+    if (!ids.length) throw new Error("Sélectionnez au moins un produit.");
     const { error: linkError } = await supabase.from("promotion_products").insert(ids.map((product_id) => ({ promotion_id: promotionId, product_id })));
-    if (linkError) throw new Error("Produktauswahl konnte nicht gespeichert werden.");
+    if (linkError) throw new Error("La sélection de produits n'a pas pu être enregistrée.");
   }
   if (input.scope === "categories") {
     const ids = formData.getAll("category_ids").map(String);
@@ -437,7 +437,7 @@ export async function archivePromotion(formData: FormData) {
   const id = idSchema.parse(formData.get("id"));
   const supabase = await getMigrationAwareServerSupabase();
   const { error } = await supabase.from("promotions").update({ is_active: false }).eq("id", id);
-  if (error) throw new Error("Rabatt konnte nicht deaktiviert werden.");
+  if (error) throw new Error("La remise n'a pas pu être désactivée.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "promotion.archive", entity: "promotion", entityId: id });
   revalidatePath("/admin/rabatte"); revalidatePath("/kasse");
 }
@@ -454,7 +454,7 @@ export async function saveFaq(formData: FormData) {
   const input = faqSchema.parse({ id: formData.get("id") || undefined, question: formData.get("question"), answer: formData.get("answer"), category: formData.get("category"), product_id: formData.get("product_id") || null, position: formData.get("position") || 0, status: formData.get("status") });
   const { id, ...values } = input; const supabase = await getMigrationAwareServerSupabase();
   const query = id ? supabase.from("faq_entries").update({ ...values, updated_by: actor.userId }).eq("id", id).select("id").single() : supabase.from("faq_entries").insert({ ...values, updated_by: actor.userId }).select("id").single();
-  const { data, error } = await query; if (error || !data) throw new Error("FAQ-Eintrag konnte nicht gespeichert werden.");
+  const { data, error } = await query; if (error || !data) throw new Error("L'entrée FAQ n'a pas pu être enregistrée.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "faq.update" : "faq.create", entity: "faq", entityId: data.id });
   revalidatePath("/faq"); revalidatePath("/admin/faq");
 }
@@ -462,7 +462,7 @@ export async function saveFaq(formData: FormData) {
 export async function archiveFaq(formData: FormData) {
   const actor = await requireAdminAccess(["admin", "content_editor"]); const id = idSchema.parse(formData.get("id"));
   const supabase = await getMigrationAwareServerSupabase(); const { error } = await supabase.from("faq_entries").update({ status: "archived", updated_by: actor.userId }).eq("id", id);
-  if (error) throw new Error("FAQ-Eintrag konnte nicht archiviert werden.");
+  if (error) throw new Error("L'entrée FAQ n'a pas pu être archivée.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "faq.archive", entity: "faq", entityId: id }); revalidatePath("/faq"); revalidatePath("/admin/faq");
 }
 
@@ -476,7 +476,7 @@ export async function archiveFaq(formData: FormData) {
 export async function sendTestEmail() {
   const actor = await requireAdminAccess(["admin"]);
   const inbox = adminInbox();
-  if (!inbox) throw new Error("Keine Admin-E-Mail konfiguriert (ADMIN_EMAIL).");
+  if (!inbox) throw new Error("Aucun e-mail admin configuré (ADMIN_EMAIL).");
 
   const check = await verifyEmailTransport();
   if (!check.ok) throw new Error(check.detail);
@@ -488,7 +488,7 @@ export async function sendTestEmail() {
     text: `Diese Testnachricht wurde am ${sentAt} aus der Administration ausgelöst. Wenn Sie sie lesen, funktioniert der Versand von Bestellbestätigungen und Statusmeldungen.`,
     html: `<p>Diese Testnachricht wurde am ${sentAt} aus der Administration ausgelöst.</p><p>Wenn Sie sie lesen, funktioniert der Versand von Bestellbestätigungen und Statusmeldungen.</p>`,
   });
-  if (!result.sent) throw new Error(`Versand fehlgeschlagen: ${result.error ?? result.skipped}`);
+  if (!result.sent) throw new Error(`Envoi échoué : ${result.error ?? result.skipped}`);
 
   await auditAdminAction({
     ...actor,
@@ -500,7 +500,34 @@ export async function sendTestEmail() {
   revalidatePath("/admin");
 }
 
+const extraLineSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  quantity: z.coerce.number().positive(),
+  price: z.coerce.number().positive(),
+  site: z.boolean(),
+});
+
+/**
+ * Reads the dynamic extra-line fields the invoice form appends
+ * (`line_name_N`, `line_quantity_N`, `line_price_N`, `line_site_N`).
+ */
+function readExtraLines(formData: FormData) {
+  const count = Number(formData.get("line_count") ?? 0);
+  const lines = [];
+  for (let index = 0; index < count; index++) {
+    const name = String(formData.get(`line_name_${index}`) ?? "").trim();
+    if (!name) continue;
+    const quantityRaw = String(formData.get(`line_quantity_${index}`) ?? "1").trim().replace(",", ".");
+    const priceRaw = String(formData.get(`line_price_${index}`) ?? "").trim().replace(",", ".");
+    if (!priceRaw) continue;
+    lines.push(extraLineSchema.parse({ name, quantity: quantityRaw, price: priceRaw, site: formData.get(`line_site_${index}`) === "on" }));
+  }
+  return lines;
+}
+
 export async function issueInvoice(formData: FormData) {
   const actor = await requireAdminAccess(["admin"]); const orderId = idSchema.parse(formData.get("order_id"));
-  const invoice = await issueInvoiceForOrder(orderId); await auditAdminAction({ ...actor, actorId: actor.userId, action: "invoice.issue", entity: "invoice", entityId: invoice.id, metadata: { order_id: orderId, invoice_number: invoice.invoiceNumber } }); revalidatePath("/admin/rechnungen");
+  const extraLines = readExtraLines(formData);
+  const invoice = await issueInvoiceForOrder(orderId, extraLines.map((line) => ({ name: line.name, quantity: line.quantity, unitPriceCents: Math.round(line.price * 100), createProduct: line.site })));
+  await auditAdminAction({ ...actor, actorId: actor.userId, action: "invoice.issue", entity: "invoice", entityId: invoice.id, metadata: { order_id: orderId, invoice_number: invoice.invoiceNumber, extra_lines: extraLines.length, created_products: invoice.createdProducts.length } }); revalidatePath("/admin/rechnungen");
 }

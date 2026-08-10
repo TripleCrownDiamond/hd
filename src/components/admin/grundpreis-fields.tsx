@@ -12,13 +12,13 @@ import {
 } from "@/lib/utils";
 
 const QUANTITY_UNITS: Array<[QuantityUnit, string]> = [
-  ["kg", "Kilogramm (kg)"],
+  ["kg", "Kilogramme (kg)"],
   ["t", "Tonne (t)"],
-  ["srm", "Schüttraummeter (SRM)"],
-  ["rm", "Raummeter (RM)"],
-  ["fm", "Festmeter (FM)"],
-  ["l", "Liter (l)"],
-  ["stk", "Stück"],
+  ["srm", "Mètre cube vrac (SRM)"],
+  ["rm", "Stère (RM)"],
+  ["fm", "Mètre cube plein (FM)"],
+  ["l", "Litre (l)"],
+  ["stk", "Pièce"],
 ];
 
 const BASE_PRICE_UNITS: BasePriceUnit[] = ["t", "100kg", "kg", "srm", "rm", "fm", "l", "stk"];
@@ -56,7 +56,7 @@ export function GrundpreisFields({
 
   return (
     <>
-      <Field label="Preis in Cent" hint="Leer lassen für Angebot auf Anfrage">
+      <Field label="Prix en centimes" hint="Laisser vide pour un devis sur demande">
         <input
           name="price_cents_public"
           type="number"
@@ -67,7 +67,7 @@ export function GrundpreisFields({
         />
       </Field>
 
-      <Field label="Verkaufsmenge" hint="Menge, die dieser Preis abdeckt — z. B. 990 für eine Palette Sackware">
+      <Field label="Quantité de vente" hint="Quantité couverte par ce prix — ex. 990 pour une palette en sacs">
         <input
           name="quantity_amount"
           inputMode="decimal"
@@ -77,14 +77,14 @@ export function GrundpreisFields({
         />
       </Field>
 
-      <Field label="Mengeneinheit">
+      <Field label="Unité de quantité">
         <select
           name="quantity_unit"
           value={unit}
           onChange={(event) => setUnit(event.target.value)}
           className={fieldClass}
         >
-          <option value="">Keine Angabe</option>
+          <option value="">Non précisée</option>
           {QUANTITY_UNITS.map(([value, label]) => (
             <option key={value} value={value}>
               {label}
@@ -94,8 +94,8 @@ export function GrundpreisFields({
       </Field>
 
       <Field
-        label="Grundpreis je"
-        hint="§ 4 PAngV: Pflichtangabe bei Verkauf nach Gewicht. Bei Brennstoffen üblich: je Tonne."
+        label="Prix de base par"
+        hint="§ 4 PAngV : mention obligatoire pour la vente au poids. Habituel pour les combustibles : par tonne."
       >
         <select
           name="base_price_unit"
@@ -114,16 +114,16 @@ export function GrundpreisFields({
       <p className="text-muted md:col-span-2 text-sm" aria-live="polite">
         {basePrice != null ? (
           <>
-            Grundpreis:{" "}
+            Prix de base :{" "}
             <strong className="text-text font-mono tabular-nums">
               {formatBasePrice(basePrice, BASE_PRICE_UNIT_LABEL[baseUnit as BasePriceUnit])}
             </strong>{" "}
             <span className="text-xs">
-              ({formatPrice(Number(price))} für {amount} {unit})
+              ({formatPrice(Number(price))} pour {amount} {unit})
             </span>
           </>
         ) : (
-          "Grundpreis wird berechnet, sobald Preis, Menge und eine passende Einheit gesetzt sind. Volumeneinheiten lassen sich nicht ineinander umrechnen."
+          "Le prix de base sera calculé dès que le prix, la quantité et une unité adaptée seront renseignés. Les unités de volume ne peuvent pas être converties entre elles."
         )}
       </p>
     </>

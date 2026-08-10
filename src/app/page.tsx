@@ -35,8 +35,6 @@ import { ReviewStars } from "@/components/commerce/review-stars";
 import { getShopReviews, summarise, type Review } from "@/lib/reviews/reviews";
 import { getLatestArticles, type ArticleSummary } from "@/lib/content/articles";
 import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
-import { stammholzProducts, type StammholzProduct } from "@/lib/fixtures";
-import { StammholzCard } from "@/components/commerce/stammholz-card";
 
 export const dynamic = "force-dynamic";
 
@@ -183,6 +181,8 @@ const categoryImageBySlug: Record<string, string> = {
   holzpellets: IMAGES.kategorieHolzpellets,
   anzuendholz: IMAGES.kategorieAnzuendholz,
   holzbriketts: IMAGES.kategorieHolzbriketts,
+  // No dedicated photograph yet: whole logs are closest to the firewood shot.
+  stammholz: IMAGES.kategorieBrennholz,
   // No dedicated photograph yet: briquettes are the closest visual match.
   kohle: IMAGES.kategorieHolzbriketts,
   zubehoer: IMAGES.kategorieOfenzubehoer,
@@ -285,7 +285,8 @@ function FeaturedProducts({ woodProducts }: { woodProducts: WoodCatalogProduct[]
               Brennholz im Sortiment
             </h2>
             <p className="text-muted mt-2">
-              Kammergetrocknet, PEFC-zertifiziert — Holzart, Länge, Restfeuchte und Menge wie deklariert.
+              Kammergetrocknet, PEFC-zertifiziert — Holzart, Länge, Restfeuchte und Menge
+              wie deklariert.
             </p>
           </div>
           <Button asChild variant="ghost">
@@ -298,7 +299,11 @@ function FeaturedProducts({ woodProducts }: { woodProducts: WoodCatalogProduct[]
         <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {preview.length > 0 ? (
             preview.map((product, index) => (
-              <WoodProductCard key={product.id} product={product} priority={index === 0} />
+              <WoodProductCard
+                key={product.id}
+                product={product}
+                priority={index === 0}
+              />
             ))
           ) : (
             <CatalogEmptyState />
@@ -337,7 +342,7 @@ function StoveSection({ stoves }: { stoves: ScrapedProduct[] }) {
               </Link>
             </Button>
             <Button asChild variant="ghost">
-              <Link href="/ofenberatung">Beratung starten</Link>
+              <Link href="/ratgeber">Beratung starten</Link>
             </Button>
           </div>
         </div>
@@ -366,7 +371,7 @@ function StoveSection({ stoves }: { stoves: ScrapedProduct[] }) {
   );
 }
 
-function StammholzSection({ products }: { products: StammholzProduct[] }) {
+function StammholzSection({ products }: { products: WoodCatalogProduct[] }) {
   const preview = products.slice(0, 4);
   if (preview.length === 0) return null;
   return (
@@ -381,8 +386,8 @@ function StammholzSection({ products }: { products: StammholzProduct[] }) {
               Stammholz per LKW-Ladung
             </h2>
             <p className="text-muted mt-2 max-w-xl">
-              PEFC-zertifiziertes Rund- und Stammholz für Sägewerke und Großabnehmer.
-              Menge wählen: Viertel-, Halb- oder Voll-LKW — direkt ab Forststraße.
+              PEFC-zertifiziertes Rund- und Stammholz für Sägewerke und Großabnehmer,
+              direkt ab Forststraße geliefert.
             </p>
           </div>
           <Button asChild variant="ghost">
@@ -393,8 +398,8 @@ function StammholzSection({ products }: { products: StammholzProduct[] }) {
           </Button>
         </div>
         <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {preview.map((product) => (
-            <StammholzCard key={product.id} product={product} />
+          {preview.map((product, index) => (
+            <WoodProductCard key={product.id} product={product} priority={index === 0} />
           ))}
         </div>
       </div>
@@ -672,14 +677,20 @@ function GuidesSection({ articles }: { articles: ArticleSummary[] }) {
             />
           ) : (
             articles.map((article) => (
-              <Link key={article.slug} href={`/ratgeber/${article.slug}`} className="group">
+              <Link
+                key={article.slug}
+                href={`/ratgeber/${article.slug}`}
+                className="group"
+              >
                 <Card className="h-full transition-shadow group-hover:shadow-md">
                   <CardContent className="pt-6">
                     <h3 className="text-text font-display text-lg font-semibold">
                       {article.title}
                     </h3>
                     {article.excerpt && (
-                      <p className="text-muted mt-2 text-sm leading-relaxed">{article.excerpt}</p>
+                      <p className="text-muted mt-2 text-sm leading-relaxed">
+                        {article.excerpt}
+                      </p>
                     )}
                     <span className="text-brand mt-4 inline-flex items-center gap-1 text-sm">
                       Weiterlesen
@@ -761,6 +772,7 @@ export default async function HomePage() {
   const [
     categories,
     woodRows,
+    logs,
     stoves,
     briquettes,
     pellets,
@@ -770,20 +782,24 @@ export default async function HomePage() {
     reviews,
     articles,
     settingsResult,
-  ] =
-    await Promise.all([
-      getPublishedCategories(),
-      getPublishedCardProducts("wood"),
-      getPublishedStoves(),
-      getPublishedCardProducts("briquette"),
-      getPublishedCardProducts("pellet"),
-      getPublishedCardProducts("kindling"),
-      getPublishedCardProducts("coal"),
-      getPublishedCardProducts("accessory"),
-      getShopReviews(3),
-      getLatestArticles(3),
-      getMigrationAwarePublicSupabase().from("site_settings").select("newsletter_enabled").eq("id", 1).maybeSingle(),
-    ]);
+  ] = await Promise.all([
+    getPublishedCategories(),
+    getPublishedCardProducts("wood"),
+    getPublishedCardProducts("log"),
+    getPublishedStoves(),
+    getPublishedCardProducts("briquette"),
+    getPublishedCardProducts("pellet"),
+    getPublishedCardProducts("kindling"),
+    getPublishedCardProducts("coal"),
+    getPublishedCardProducts("accessory"),
+    getShopReviews(3),
+    getLatestArticles(3),
+    getMigrationAwarePublicSupabase()
+      .from("site_settings")
+      .select("newsletter_enabled")
+      .eq("id", 1)
+      .maybeSingle(),
+  ]);
   const woodProducts = woodRows as WoodCatalogProduct[];
 
   return (
@@ -793,7 +809,7 @@ export default async function HomePage() {
       <BenefitsStrip />
       <CategoryGrid categories={categories} />
       <FeaturedProducts woodProducts={woodProducts} />
-      <StammholzSection products={stammholzProducts} />
+      <StammholzSection products={logs as WoodCatalogProduct[]} />
       <StoveSection stoves={stoves} />
       <FuelSection
         title="Holzbriketts"

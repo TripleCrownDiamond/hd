@@ -5,13 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { media } from "@/lib/media";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, normalizeGermanNumbers } from "@/lib/utils";
 import { getWoodProductBySlug } from "@/lib/products/catalog";
 import { ProductActions } from "@/components/commerce/product-actions";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
   const product = await getWoodProductBySlug(slug);
   // The root layout already appends the brand to the title template.
@@ -70,13 +74,17 @@ export default async function ProduktDetailPage({
 
   const PARENTS: Record<string, { label: string; href: string } | undefined> = {
     wood: { label: "Brennholz", href: "/brennholz" },
+    log: { label: "Stammholz", href: "/stammholz" },
     kindling: { label: "Anzündholz", href: "/anzuendholz" },
     briquette: { label: "Holzbriketts", href: "/holzbriketts" },
     pellet: { label: "Holzpellets", href: "/holzpellets" },
     coal: { label: "Kohle & Grillkohle", href: "/kohle" },
     accessory: { label: "Ofenzubehör", href: "/zubehoer" },
   };
-  const parent = PARENTS[product.type] ?? { label: "Brennholz", href: "/brennholz" };
+  const parent = PARENTS[product.kind ?? product.type] ?? {
+    label: "Brennholz",
+    href: "/brennholz",
+  };
 
   return (
     <div className="bg-elevated/40">
@@ -173,7 +181,11 @@ export default async function ProduktDetailPage({
               {facts.map(([label, value]) => (
                 <div key={label} className="contents">
                   <dt className="text-muted">{label}</dt>
-                  <dd className="text-text font-medium">{value}</dd>
+                  {/* Supplier tables mix separators ("548,50 kg" beside "548.5 kg");
+                      render every number in the German format. */}
+                  <dd className="text-text font-medium">
+                    {normalizeGermanNumbers(value)}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -181,7 +193,9 @@ export default async function ProduktDetailPage({
             {product.longDescription && (
               <>
                 <Separator className="my-6" />
-                <h2 className="font-display text-text text-lg font-semibold">Beschreibung</h2>
+                <h2 className="font-display text-text text-lg font-semibold">
+                  Beschreibung
+                </h2>
                 <p className="text-muted mt-2 text-sm leading-relaxed">
                   {product.longDescription}
                 </p>
@@ -191,9 +205,9 @@ export default async function ProduktDetailPage({
             <Card className="mt-6 p-0">
               <CardContent className="p-4">
                 <p className="text-muted text-sm">
-                  Dieser Eintrag stammt aus einer Lieferantenquelle und befindet sich in der
-                  Katalogprüfung ({product.reviewStatus}). Bestellung und Lieferung sind noch
-                  nicht freigeschaltet.
+                  Dieser Eintrag stammt aus einer Lieferantenquelle und befindet sich in
+                  der Katalogprüfung ({product.reviewStatus}). Bestellung und Lieferung
+                  sind noch nicht freigeschaltet.
                 </p>
               </CardContent>
             </Card>

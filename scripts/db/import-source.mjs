@@ -52,6 +52,7 @@ const BRAND_NAMES = {
   maxblank: "Max Blank",
   areiter: "A. Reiter",
   ecoreichholz: "ECO Reichholz",
+  "bri-brennholz": "BRIE Brennholz",
   ofenkoppe: "Ofen Koppe",
   rika: "RIKA",
   skantherm: "Skantherm",
@@ -62,6 +63,9 @@ const BRAND_NAMES = {
 /** product_kind (scrape) -> { kind (enum), category slug }. */
 const KIND_TO_CATEGORY = {
   wood: { kind: "wood", category: "brennholz" },
+  // Rundholz, Meterscheite and Polterholz: a distinct kind and category so a
+  // 3-metre trunk does not sit next to a 25 cm kiln-dried sack.
+  log: { kind: "log", category: "stammholz" },
   kindling: { kind: "kindling", category: "anzuendholz" },
   briquette: { kind: "briquette", category: "holzbriketts" },
   pellet: { kind: "pellet", category: "holzpellets" },

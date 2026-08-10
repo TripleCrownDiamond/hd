@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Flame } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoginForm } from "@/components/account/login-form";
@@ -26,7 +27,13 @@ export default function LoginPage() {
 
           <Card>
             <CardContent className="pt-6">
-              <LoginForm />
+              <Suspense
+                fallback={
+                  <p className="text-muted py-8 text-center text-sm">Formular wird geladen …</p>
+                }
+              >
+                <LoginForm />
+              </Suspense>
             </CardContent>
           </Card>
 

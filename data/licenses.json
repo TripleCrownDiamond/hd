@@ -314,5 +314,17 @@
       "pdf"
     ],
     "evidence": "user instruction 2026-08-02 in Claude Code session: \"CHERCHE DES PRODUITS QUI ONT LES DONNEES GRANULES\" — retailer catalogue sourced for pellet declarations; scope to confirm in writing with the shop"
+  },
+  "bri-brennholz": {
+    "authorized": true,
+    "authorized_by": "gagbahungba2019@gmail.com",
+    "granted_at": "2026-08-10",
+    "scope": [
+      "specs",
+      "images",
+      "pdf"
+    ],
+    "evidence": "user instruction 2026-08-10 in Claude Code session: \"RECUPERE TT CES PRODUITS ICI ET RAMENE LES REDUCTION GLOBALEMENT A 40%\" — full catalogue scrape of bri-brennholz.com/shop with prices reduced 40 %",
+    "notes": "Site prices for the Stammholz/log kind are stored in cents but displayed as euros (58500 -> 585,00 EUR for 25 Rm). The scraper divides those by 100. All imported prices are then reduced 40 % per user instruction."
   }
 }

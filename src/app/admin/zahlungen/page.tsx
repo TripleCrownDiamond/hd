@@ -2,7 +2,11 @@ import { getMigrationAwareServerSupabase } from "@/lib/db/server";
 import { AdminHeader, Field, fieldClass, areaClass } from "@/components/admin/admin-ui";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CRYPTO_CHOICES, type PaymentSettingsRow } from "@/lib/payments/config";
+import {
+  CRYPTO_CHOICES,
+  isPlaceholderBankData,
+  type PaymentSettingsRow,
+} from "@/lib/payments/config";
 import { savePaymentSettings } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -19,13 +23,29 @@ export default async function PaymentSettingsAdminPage() {
   return (
     <div className="space-y-8">
       <AdminHeader
-        eyebrow="Storefront"
-        title="Zahlungsarten"
-        description="Nur aktivierte und vollständig konfigurierte Methoden erscheinen an der Kasse. Geheime Schlüssel (Stripe Secret Key, BTCPay API Key) gehören in die Server-Umgebung, nicht hierher."
+        eyebrow="Boutique"
+        title="Moyens de paiement"
+        description="Seules les méthodes activées et entièrement configurées apparaissent à la caisse. Les clés secrètes (Stripe Secret Key, BTCPay API Key) appartiennent à l’environnement serveur, pas ici."
       />
 
+      {settings &&
+        isPlaceholderBankData({
+          method: "bank_transfer",
+          accountHolder: settings.bank_account_holder ?? "",
+          iban: settings.bank_iban ?? "",
+          bic: settings.bank_bic,
+          bankName: settings.bank_name,
+        }) && (
+          <div
+            role="status"
+            className="border-warning/40 bg-warning/5 text-text rounded-lg border p-4 text-sm"
+          >
+            <strong className="font-semibold">Coordonnées bancaires provisoires actives.</strong>{" "}Le virement utilise encore les valeurs par défaut. Remplacez l’IBAN et le titulaire par un vrai compte avant que la boutique ne prenne des commandes réelles. Tant que le placeholder est en place, les clients voient « Coordonnées bancaires par e-mail » après leur commande, au lieu d’un compte.
+          </div>
+        )}
+
       <form action={savePaymentSettings} className="space-y-6">
-        {/* Bank transfer */}
+        {/* Virement */}
         <Card>
           <CardContent className="space-y-4 pt-6">
             <label className="text-text flex items-center gap-2 text-sm font-medium">
@@ -34,14 +54,14 @@ export default async function PaymentSettingsAdminPage() {
                 name="bank_transfer_enabled"
                 defaultChecked={settings?.bank_transfer_enabled ?? false}
               />
-              Überweisung anbieten
+              Proposer le virement (Überweisung)
             </label>
             <p className="text-muted text-sm">
-              Ohne externen Anbieter. Der Kunde erhält Kontodaten und eine Referenz; die Bestellung
-              wartet auf Ihren Zahlungsabgleich.
+              Sans prestataire externe. Le client reçoit les coordonnées et une référence ; la
+              commande attend votre rapprochement de paiement.
             </p>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Kontoinhaber">
+              <Field label="Titulaire du compte">
                 <input
                   name="bank_account_holder"
                   defaultValue={settings?.bank_account_holder ?? ""}
@@ -59,10 +79,10 @@ export default async function PaymentSettingsAdminPage() {
               <Field label="BIC">
                 <input name="bank_bic" defaultValue={settings?.bank_bic ?? ""} className={fieldClass} />
               </Field>
-              <Field label="Bank">
+              <Field label="Banque">
                 <input name="bank_name" defaultValue={settings?.bank_name ?? ""} className={fieldClass} />
               </Field>
-              <Field label="Referenz-Präfix" hint="z. B. HK → HK-2026-000123">
+              <Field label="Préfixe de référence" hint="ex. HK → HK-2026-000123">
                 <input
                   name="bank_reference_prefix"
                   defaultValue={settings?.bank_reference_prefix ?? "HK"}
@@ -74,22 +94,22 @@ export default async function PaymentSettingsAdminPage() {
           </CardContent>
         </Card>
 
-        {/* Card */}
+        {/* Carte */}
         <Card>
           <CardContent className="space-y-4 pt-6">
             <label className="text-text flex items-center gap-2 text-sm font-medium">
               <input type="checkbox" name="card_enabled" defaultChecked={settings?.card_enabled ?? false} />
-              Kreditkarte anbieten
+              Proposer la carte bancaire
             </label>
             <p className="text-muted text-sm">
-              Über einen Zahlungsdienstleister, der die Karte im Browser tokenisiert. Es wird nur der
-              öffentliche Publishable Key gespeichert; der Secret Key bleibt in der Server-Umgebung
-              (<code>STRIPE_SECRET_KEY</code>).
+              Via un prestataire de paiement qui tokenise la carte dans le navigateur. Seule la clé
+              publishable est stockée ; la clé secrète reste dans l’environnement serveur (
+              <code>STRIPE_SECRET_KEY</code>).
             </p>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Anbieter">
+              <Field label="Prestataire">
                 <select name="card_provider" defaultValue={settings?.card_provider ?? ""} className={fieldClass}>
-                  <option value="">— wählen —</option>
+                  <option value="">— choisir —</option>
                   {CARD_PROVIDERS.map((provider) => (
                     <option key={provider} value={provider}>
                       {provider}
@@ -97,7 +117,7 @@ export default async function PaymentSettingsAdminPage() {
                   ))}
                 </select>
               </Field>
-              <Field label="Publishable Key" hint="öffentlicher Schlüssel, z. B. pk_live_…">
+              <Field label="Clé publishable" hint="clé publique, ex. pk_live_…">
                 <input
                   name="card_publishable_key"
                   defaultValue={settings?.card_publishable_key ?? ""}
@@ -105,7 +125,7 @@ export default async function PaymentSettingsAdminPage() {
                 />
               </Field>
               <div className="md:col-span-2">
-                <Field label="Hinweis an den Kunden (optional)">
+                <Field label="Note au client (facultatif)">
                   <textarea name="card_note" defaultValue={settings?.card_note ?? ""} className={areaClass} />
                 </Field>
               </div>
@@ -118,17 +138,17 @@ export default async function PaymentSettingsAdminPage() {
           <CardContent className="space-y-4 pt-6">
             <label className="text-text flex items-center gap-2 text-sm font-medium">
               <input type="checkbox" name="crypto_enabled" defaultChecked={settings?.crypto_enabled ?? false} />
-              Kryptowährung anbieten
+              Proposer la cryptomonnaie
             </label>
             <p className="text-muted text-sm">
-              Über einen Anbieter, der die Adresse erzeugt und die Zahlung on-chain bestätigt. Wir
-              verwahren weder Schlüssel noch Guthaben. Der API-Schlüssel des Anbieters gehört in die
-              Server-Umgebung.
+              Via un prestataire qui génère l’adresse et confirme le paiement on-chain. Nous ne
+              détenons ni clés ni fonds. La clé API du prestataire appartient à l’environnement
+              serveur.
             </p>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Anbieter">
+              <Field label="Prestataire">
                 <select name="crypto_provider" defaultValue={settings?.crypto_provider ?? ""} className={fieldClass}>
-                  <option value="">— wählen —</option>
+                  <option value="">— choisir —</option>
                   {CRYPTO_PROVIDERS.map((provider) => (
                     <option key={provider} value={provider}>
                       {provider}
@@ -136,7 +156,7 @@ export default async function PaymentSettingsAdminPage() {
                   ))}
                 </select>
               </Field>
-              <Field label="Anbieter-URL" hint="z. B. Ihre BTCPay-Server-Instanz">
+              <Field label="URL du prestataire" hint="ex. votre instance BTCPay">
                 <input
                   name="crypto_provider_url"
                   defaultValue={settings?.crypto_provider_url ?? ""}
@@ -145,7 +165,7 @@ export default async function PaymentSettingsAdminPage() {
               </Field>
             </div>
             <fieldset className="grid gap-2">
-              <legend className="text-text text-sm font-medium">Akzeptierte Währungen</legend>
+              <legend className="text-text text-sm font-medium">Devises acceptées</legend>
               <div className="flex flex-wrap gap-3">
                 {CRYPTO_CHOICES.map((currency) => (
                   <label key={currency} className="text-text flex items-center gap-2 text-sm">
@@ -160,13 +180,13 @@ export default async function PaymentSettingsAdminPage() {
                 ))}
               </div>
             </fieldset>
-            <Field label="Hinweis an den Kunden (optional)">
+            <Field label="Note au client (facultatif)">
               <textarea name="crypto_note" defaultValue={settings?.crypto_note ?? ""} className={areaClass} />
             </Field>
           </CardContent>
         </Card>
 
-        <Button type="submit">Zahlungsarten speichern</Button>
+        <Button type="submit">Enregistrer les moyens de paiement</Button>
       </form>
     </div>
   );

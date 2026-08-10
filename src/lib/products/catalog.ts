@@ -199,7 +199,9 @@ async function readAllRows<T>(
       if (error) {
         lastError = error;
         if (attempt < MAX_ATTEMPTS) {
-          await new Promise((resolve) => setTimeout(resolve, RETRY_BASE_MS * 2 ** (attempt - 1)));
+          await new Promise((resolve) =>
+            setTimeout(resolve, RETRY_BASE_MS * 2 ** (attempt - 1)),
+          );
         }
         continue;
       }
@@ -278,7 +280,11 @@ async function readRows(filters?: {
   const [products, brands] = await Promise.all([
     readAllRows<ProductRow>("products", productsPage),
     readAllRows<BrandRow>("brands", (from, to) =>
-      supabase.from("brands").select("*").order("slug", { ascending: true }).range(from, to),
+      supabase
+        .from("brands")
+        .select("*")
+        .order("slug", { ascending: true })
+        .range(from, to),
     ),
   ]);
 
@@ -305,15 +311,18 @@ async function readRows(filters?: {
             .order("position", { ascending: true })
             .range(from, to),
         )
-      : readByProductIds<ProductVariantRow>("product variants", productIds, (ids, from, to) =>
-          supabase
-            .from("product_variants")
-            .select("*")
-            .in("product_id", ids)
-            .eq("is_active", true)
-            .order("product_id", { ascending: true })
-            .order("position", { ascending: true })
-            .range(from, to),
+      : readByProductIds<ProductVariantRow>(
+          "product variants",
+          productIds,
+          (ids, from, to) =>
+            supabase
+              .from("product_variants")
+              .select("*")
+              .in("product_id", ids)
+              .eq("is_active", true)
+              .order("product_id", { ascending: true })
+              .order("position", { ascending: true })
+              .range(from, to),
         ),
     wholeKind
       ? readAllRows<ProductMediaRow>("product media", (from, to) => {
@@ -328,17 +337,21 @@ async function readRows(filters?: {
           if (filters?.heroOnly) query = query.eq("position", 0);
           return query;
         })
-      : readByProductIds<ProductMediaRow>("product media", productIds, (ids, from, to) => {
-          let query = supabase
-            .from("product_media")
-            .select("*")
-            .in("product_id", ids)
-            .order("product_id", { ascending: true })
-            .order("position", { ascending: true })
-            .range(from, to);
-          if (filters?.heroOnly) query = query.eq("position", 0);
-          return query;
-        }),
+      : readByProductIds<ProductMediaRow>(
+          "product media",
+          productIds,
+          (ids, from, to) => {
+            let query = supabase
+              .from("product_media")
+              .select("*")
+              .in("product_id", ids)
+              .order("product_id", { ascending: true })
+              .order("position", { ascending: true })
+              .range(from, to);
+            if (filters?.heroOnly) query = query.eq("position", 0);
+            return query;
+          },
+        ),
   ]);
 
   return { products, brands, variants, media };
@@ -349,7 +362,10 @@ async function readRows(filters?: {
  * the ones a visitor can actually evaluate. Model order is kept within each
  * group so the listing stays stable and predictable.
  */
-function pricedFirst(a: { priceCents: number | null }, b: { priceCents: number | null }): number {
+function pricedFirst(
+  a: { priceCents: number | null },
+  b: { priceCents: number | null },
+): number {
   const aHas = a.priceCents != null && a.priceCents > 0;
   const bHas = b.priceCents != null && b.priceCents > 0;
   return Number(bHas) - Number(aHas);
@@ -403,23 +419,28 @@ export function invalidateCatalogCache(): void {
   catalogCache.clear();
 }
 
-const getCachedPublishedStoves = cachedRead("stoves", async (): Promise<ScrapedProduct[]> => {
-  const rows = await readRows({ kind: "stove", heroOnly: true });
-  return rows.products
-    .map((product) => toStove(product, rows))
-    .sort((a, b) =>
-      pricedFirst(
-        { priceCents: a.pricing.price_cents_public },
-        { priceCents: b.pricing.price_cents_public },
-      ),
-    );
-});
+const getCachedPublishedStoves = cachedRead(
+  "stoves",
+  async (): Promise<ScrapedProduct[]> => {
+    const rows = await readRows({ kind: "stove", heroOnly: true });
+    return rows.products
+      .map((product) => toStove(product, rows))
+      .sort((a, b) =>
+        pricedFirst(
+          { priceCents: a.pricing.price_cents_public },
+          { priceCents: b.pricing.price_cents_public },
+        ),
+      );
+  },
+);
 
 export async function getPublishedStoves(): Promise<ScrapedProduct[]> {
   return getCachedPublishedStoves("");
 }
 
-export async function getPublishedStoveBySlug(slug: string): Promise<ScrapedProduct | null> {
+export async function getPublishedStoveBySlug(
+  slug: string,
+): Promise<ScrapedProduct | null> {
   const rows = await readRows({ kind: "stove", slug });
   const product = rows.products[0];
   if (!product) return null;
@@ -460,39 +481,48 @@ export async function getPublishedStoveBySlug(slug: string): Promise<ScrapedProd
   return { ...toStove(product, rows), documents: signedDocuments };
 }
 
-const getCachedPublishedCategories = cachedRead("categories", async (): Promise<CatalogCategory[]> => {
-  const supabase = getCatalogReadSupabase();
-  const [categories, productCategories] = await Promise.all([
-    readAllRows<CategoryRow>("categories", (from, to) =>
-      supabase.from("categories").select("*").order("position", { ascending: true }).range(from, to),
-    ),
-    // Counts must match what the category pages actually render.
-    readAllRows<Pick<ProductRow, "category_id">>("category product counts", (from, to) =>
-      supabase
-        .from("products")
-        .select("category_id")
-        .eq("review_status", "approved")
-        .order("id", { ascending: true })
-        .range(from, to),
-    ),
-  ]);
+const getCachedPublishedCategories = cachedRead(
+  "categories",
+  async (): Promise<CatalogCategory[]> => {
+    const supabase = getCatalogReadSupabase();
+    const [categories, productCategories] = await Promise.all([
+      readAllRows<CategoryRow>("categories", (from, to) =>
+        supabase
+          .from("categories")
+          .select("*")
+          .order("position", { ascending: true })
+          .range(from, to),
+      ),
+      // Counts must match what the category pages actually render.
+      readAllRows<Pick<ProductRow, "category_id">>(
+        "category product counts",
+        (from, to) =>
+          supabase
+            .from("products")
+            .select("category_id")
+            .eq("review_status", "approved")
+            .order("id", { ascending: true })
+            .range(from, to),
+      ),
+    ]);
 
-  const counts = new Map<string, number>();
-  for (const product of productCategories) {
-    if (product.category_id) {
-      counts.set(product.category_id, (counts.get(product.category_id) ?? 0) + 1);
+    const counts = new Map<string, number>();
+    for (const product of productCategories) {
+      if (product.category_id) {
+        counts.set(product.category_id, (counts.get(product.category_id) ?? 0) + 1);
+      }
     }
-  }
 
-  return categories.map((category: CategoryRow) => ({
-    id: category.id,
-    name: category.name,
-    slug: category.slug,
-    description: category.short_description ?? "",
-    image: category.hero_cloudinary_id ?? "",
-    productCount: counts.get(category.id) ?? 0,
-  }));
-});
+    return categories.map((category: CategoryRow) => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.short_description ?? "",
+      image: category.hero_cloudinary_id ?? "",
+      productCount: counts.get(category.id) ?? 0,
+    }));
+  },
+);
 
 export async function getPublishedCategories(): Promise<CatalogCategory[]> {
   return getCachedPublishedCategories("");
@@ -509,7 +539,9 @@ const getCachedPublishedCardProducts = cachedRead(
     const rows = await readRows({ kind, heroOnly: true });
     return rows.products
       .map((product) =>
-        kind === "accessory" ? toStorefrontProduct(product, rows) : toWoodProduct(product, rows),
+        kind === "accessory"
+          ? toStorefrontProduct(product, rows)
+          : toWoodProduct(product, rows),
       )
       .sort(pricedFirst);
   },
@@ -521,16 +553,21 @@ export async function getPublishedCardProducts(
   return getCachedPublishedCardProducts(kind);
 }
 
-const getCachedFuelProducts = cachedRead("fuel", async (kind: FuelKind): Promise<WoodCatalogProduct[]> => {
-  const rows = await readRows({ kind, heroOnly: true });
-  return rows.products.map((product) => toWoodProduct(product, rows)).sort(pricedFirst);
-});
+const getCachedFuelProducts = cachedRead(
+  "fuel",
+  async (kind: FuelKind): Promise<WoodCatalogProduct[]> => {
+    const rows = await readRows({ kind, heroOnly: true });
+    return rows.products.map((product) => toWoodProduct(product, rows)).sort(pricedFirst);
+  },
+);
 
 export async function getFuelProducts(kind: FuelKind): Promise<WoodCatalogProduct[]> {
   return getCachedFuelProducts(kind);
 }
 
 export interface WoodProductDetail extends WoodCatalogProduct {
+  /** The product kind as stored — `type` is normalised to "wood" for cards. */
+  kind: ProductKind;
   longDescription: string | null;
   sourceUrl: string | null;
   reviewStatus: string;
@@ -541,7 +578,9 @@ export interface WoodProductDetail extends WoodCatalogProduct {
   categoryLabel?: string;
 }
 
-export async function getWoodProductBySlug(slug: string): Promise<WoodProductDetail | null> {
+export async function getWoodProductBySlug(
+  slug: string,
+): Promise<WoodProductDetail | null> {
   // Every non-stove product shares this detail route.
   // Reuse the paged, retrying catalogue reader. Detail pages previously used
   // one-shot media/brand queries, so a transient Supabase failure crashed the
@@ -550,6 +589,7 @@ export async function getWoodProductBySlug(slug: string): Promise<WoodProductDet
   const product = rows.products[0];
   const supportedKinds = new Set<ProductKind>([
     "wood",
+    "log",
     "kindling",
     "briquette",
     "pellet",
@@ -561,6 +601,7 @@ export async function getWoodProductBySlug(slug: string): Promise<WoodProductDet
 
   return {
     ...toWoodProduct(product, rows),
+    kind: product.kind,
     longDescription: product.description_authorized
       ? product.long_description
       : (readString(asRecord(product.extra).generated_description) ?? null),
@@ -572,8 +613,10 @@ export async function getWoodProductBySlug(slug: string): Promise<WoodProductDet
       .filter(([, value]) => typeof value === "string" || typeof value === "number")
       // Scrapers lift a few values out under internal snake_case names
       // (norm_de, weight_kg). Those are already rendered elsewhere and would
-      // otherwise appear as row labels.
+      // otherwise appear as row labels. Shop codes (EAN, Artikel-Nr., SKU) and
+      // the raw Atr* scrape columns are likewise internal — never a spec row.
       .filter(([key]) => !/^[a-z0-9]+(_[a-z0-9]+)+$/.test(key))
+      .filter(([key]) => !isInternalSpecKey(key))
       .map(([key, value]) => [key, String(value)] as [string, string]),
     categoryLabel: readString(extra.category_de),
   };
@@ -585,7 +628,10 @@ function toStove(product: ProductRow, rows: CatalogRows): ScrapedProduct {
   const media = rows.media.filter((item) => item.product_id === product.id);
   const gallery = media
     .filter((item) => item.kind === "image")
-    .map((item) => ({ public_id: item.cloudinary_public_id, source_url: item.source_url ?? "" }));
+    .map((item) => ({
+      public_id: item.cloudinary_public_id,
+      source_url: item.source_url ?? "",
+    }));
 
   return {
     source: product.source ?? "supabase",
@@ -728,6 +774,31 @@ const INTERNAL_EXTRA_KEYS = new Set([
 ]);
 
 /**
+ * Retailer/shop codes and internal spec columns that must never render as a
+ * spec row on a product page. `EAN`, `Artikel-Nr.` and `SKU` are the shop's
+ * own identifiers, not product facts; `Atr*` are the raw Jøtul scrape columns
+ * already mapped into the typed columns (power, efficiency, emissions).
+ */
+const INTERNAL_SPEC_KEYS = new Set([
+  "EAN",
+  "Artikel-Nr.",
+  "Artikelnr",
+  "Artikelnummer",
+  "SKU",
+  "Preis",
+  "Verfügbarkeit",
+  "Kategorie",
+  "Bestell-Nr.",
+  "Bestellnummer",
+  "Modell",
+  "Marke",
+]);
+
+function isInternalSpecKey(key: string): boolean {
+  return INTERNAL_SPEC_KEYS.has(key) || /^Atr[A-Z]/.test(key);
+}
+
+/**
  * The manufacturer's own spec table, flattened out of `extra`. Sending the raw
  * column would ship supplier image and document URLs to every visitor and let
  * internal keys surface in the spec list.
@@ -735,10 +806,13 @@ const INTERNAL_EXTRA_KEYS = new Set([
 function publicExtra(value: Json): Record<string, unknown> {
   const record = asRecord(value);
   const specs = asRecord((record.technical_specs ?? null) as Json);
-  const out: Record<string, unknown> = { ...specs };
+  const out: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(specs)) {
+    if (!isInternalSpecKey(key)) out[key] = entry;
+  }
   for (const [key, entry] of Object.entries(record)) {
     if (key === "technical_specs" || INTERNAL_EXTRA_KEYS.has(key)) continue;
-    if (out[key] === undefined) out[key] = entry;
+    if (out[key] === undefined && !isInternalSpecKey(key)) out[key] = entry;
   }
   return out;
 }

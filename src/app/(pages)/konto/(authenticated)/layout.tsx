@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 
+// Only routes that exist today. Bestellungen/Adressen/Einstellungen pages are
+// not built yet; pointing the menu at them would render a 404.
 const accountNav = [
   { label: "Übersicht", href: "/konto" },
-  { label: "Bestellungen", href: "/konto/bestellungen" },
   { label: "Merkliste", href: "/konto/favoriten" },
-  { label: "Adressen", href: "/konto/adressen" },
-  { label: "Einstellungen", href: "/konto/einstellungen" },
 ];
 
 export default function AuthenticatedAccountLayout({ children }: { children: ReactNode }) {

@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Copy } from "lucide-react";
 import { useState } from "react";
-import type { PaymentOption } from "@/lib/payments/config";
+import { isPlaceholderBankData, type PaymentOption } from "@/lib/payments/config";
 import { formatPrice } from "@/lib/utils";
 
 export interface PlacedOrderResult {
@@ -60,6 +60,27 @@ export function PaymentInstructions({
   option: PaymentOption | undefined;
 }) {
   if (order.paymentMethod === "bank_transfer" && option?.method === "bank_transfer") {
+    // The seeded placeholder account must never be shown as a real destination:
+    // the customer gets the reference and amount, the account arrives by mail.
+    if (isPlaceholderBankData(option)) {
+      return (
+        <div>
+          <p className="text-muted text-sm">
+            Bitte überweisen Sie den Gesamtbetrag und geben Sie unbedingt die Referenz an, damit wir
+            Ihre Zahlung zuordnen können. Die Kontodaten erhalten Sie per E-Mail.
+          </p>
+          <dl className="mt-4">
+            {order.paymentReference && (
+              <CopyRow label="Verwendungszweck" value={order.paymentReference} />
+            )}
+            <CopyRow label="Betrag" value={formatPrice(order.totalCents)} />
+          </dl>
+          <p className="text-muted mt-3 text-xs">
+            Nach Zahlungseingang bestätigen wir Ihre Bestellung und bereiten den Versand vor.
+          </p>
+        </div>
+      );
+    }
     return (
       <div>
         <p className="text-muted text-sm">

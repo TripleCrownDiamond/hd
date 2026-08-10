@@ -24,7 +24,17 @@ export type DeliveryCheck =
       shippingLabel: string;
       freeFromCents: number;
     }
-  | { ok: false; reason: "format" | "unknown" | "network"; message: string };
+  | {
+      ok: false;
+      reason: "format" | "unknown" | "network";
+      message: string;
+      /** Present for `unknown`: the fallback quote so the checkout can still total the order. */
+      zone?: DeliveryZone;
+      zoneLabel?: string;
+      shipping?: ShippingQuote;
+      shippingLabel?: string;
+      freeFromCents?: number;
+    };
 
 export async function checkDelivery(
   postcode: string,

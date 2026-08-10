@@ -25,6 +25,20 @@ export function formatPrice(cents: number): string {
 }
 
 /**
+ * Convert English-style decimal separators in supplier text to the German
+ * comma ("548.5 kg" -> "548,5 kg", "1.85 cm" -> "1,85 cm").
+ *
+ * Retailers publish spec tables that mix separators — one row says
+ * "548,50 kg", the next "548.5 kg". A dot followed by exactly one or two
+ * digits is a decimal separator in German; a dot followed by three digits is a
+ * thousands separator and must stay ("1.234"). A dot followed by another dot
+ * is a date and is left alone ("01.05.2026").
+ */
+export function normalizeGermanNumbers(value: string): string {
+  return value.replace(/(\d{1,3})\.(\d{1,2})(?![\d.])/g, "$1,$2");
+}
+
+/**
  * Format a base price (e.g., per kg or per m³).
  *
  * @example

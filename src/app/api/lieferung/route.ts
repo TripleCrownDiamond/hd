@@ -46,19 +46,29 @@ export async function POST(request: Request) {
   }
 
   const place = lookupPostcode(postcode);
+
+  const zone = zoneForPostcode(postcode);
+  const quote = quoteShipping({ subtotalCents, kinds, zone });
+
+  // A postcode missing from the German directory no longer blocks the order:
+  // the checkout is allowed to continue and prices the shipment with the
+  // standard mainland tariff, telling the customer it used a fallback. The
+  // reply still carries the quote so the summary never shows an empty figure.
   if (!place) {
     return NextResponse.json(
       {
         ok: false,
         reason: "unknown",
-        message: `${postcode} ist keine deutsche Postleitzahl. Wir liefern derzeit nur innerhalb Deutschlands.`,
+        message: `${postcode} wurde nicht im deutschen Postleitzahlenverzeichnis gefunden — der Standardversand wird berechnet.`,
+        zone,
+        zoneLabel: ZONE_LABEL[zone],
+        shipping: quote,
+        shippingLabel: SHIPPING_CLASS_LABEL[quote.shippingClass],
+        freeFromCents: FREE_SHIPPING_FROM_CENTS,
       },
       { status: 200 },
     );
   }
-
-  const zone = zoneForPostcode(postcode);
-  const quote = quoteShipping({ subtotalCents, kinds, zone });
 
   return NextResponse.json({
     ok: true,

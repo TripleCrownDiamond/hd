@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, ShoppingBag, Truck, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, ShoppingBag, Truck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/lib/cart/cart-store";
 import { useDelivery } from "@/lib/shipping/delivery-store";
+import { quoteShipping, SHIPPING_CLASS_LABEL } from "@/lib/shipping/rates";
+import { EUROPEAN_COUNTRIES, countryLabel } from "@/lib/shipping/countries";
 import { CartPageLoading } from "@/components/ui/loading-states";
 import { formatPrice } from "@/lib/utils";
 import { PAYMENT_LABEL, type PaymentMethod, type PaymentOption } from "@/lib/payments/config";
@@ -25,6 +27,7 @@ interface AddressFields {
   houseNumber: string;
   postcode: string;
   city: string;
+  country: string;
   email: string;
   phone: string;
 }
@@ -36,6 +39,7 @@ const EMPTY: AddressFields = {
   houseNumber: "",
   postcode: "",
   city: "",
+  country: "DE",
   email: "",
   phone: "",
 };
@@ -43,24 +47,22 @@ const EMPTY: AddressFields = {
 const ADDRESS_KEY = "holzkraft:delivery-address";
 const ORDER_KEY = "holzkraft:last-order";
 
-function validate(
-  fields: AddressFields,
-  resolvedCity: string | null,
-): Partial<Record<keyof AddressFields, string>> {
+function validate(fields: AddressFields): Partial<Record<keyof AddressFields, string>> {
   const errors: Partial<Record<keyof AddressFields, string>> = {};
   if (fields.firstName.trim().length < 2) errors.firstName = "Bitte Vornamen angeben.";
   if (fields.lastName.trim().length < 2) errors.lastName = "Bitte Nachnamen angeben.";
   if (fields.street.trim().length < 3) errors.street = "Bitte Straße angeben.";
   if (fields.houseNumber.trim().length < 1) errors.houseNumber = "Bitte Hausnummer angeben.";
-  if (!/^\d{5}$/.test(fields.postcode)) errors.postcode = "Bitte 5-stellige PLZ angeben.";
-  if (fields.city.trim().length < 2) errors.city = "Bitte Ort angeben.";
-  else if (
-    resolvedCity &&
-    fields.city.trim().toLowerCase() !== resolvedCity.toLowerCase() &&
-    !resolvedCity.toLowerCase().includes(fields.city.trim().toLowerCase())
-  ) {
-    errors.city = `Zu dieser PLZ gehört ${resolvedCity}.`;
+  if (fields.country === "DE") {
+    if (!/^\d{5}$/.test(fields.postcode)) errors.postcode = "Bitte 5-stellige PLZ angeben.";
+  } else if (fields.postcode.trim().length < 3 || fields.postcode.trim().length > 10) {
+    errors.postcode = "Bitte gültige Postleitzahl angeben.";
   }
+  // The city is only a format check: an autofilled address whose city does not
+  // match the resolved one used to block the whole order. The resolved city is
+  // now only a hint, and an unknown postcode no longer prevents ordering either
+  // (the delivery reply carries a standard-tariff quote for it).
+  if (fields.city.trim().length < 2) errors.city = "Bitte Ort angeben.";
   if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(fields.email)) {
     errors.email = "Bitte gültige E-Mail-Adresse angeben.";
   }
@@ -229,7 +231,8 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
     }
   }, [restored, deliveryHydrated, postcode, fields.postcode]);
 
-  const resolvedCity = result?.ok ? result.place.city : null;
+  const isForeign = fields.country !== "DE";
+  const resolvedCity = !isForeign && result?.ok ? result.place.city : null;
 
   useEffect(() => {
     if (resolvedCity && !fields.city) {
@@ -242,19 +245,39 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
     if (!method && paymentOptions.length > 0) setMethod(paymentOptions[0]!.method);
   }, [method, paymentOptions]);
 
-  const errors = useMemo(() => validate(fields, resolvedCity), [fields, resolvedCity]);
-  const quote = result?.ok ? result.shipping : null;
+  const errors = useMemo(() => validate(fields), [fields]);
+  // Outside Germany no postcode directory applies: the quote is the flat
+  // European tariff, computed with the same function the server uses, so the
+  // summary never disagrees with the order. In Germany the API answers, and an
+  // unknown postcode still gets the standard mainland quote.
+  const quote = isForeign
+    ? quoteShipping({ subtotalCents, kinds: items.map((item) => item.imageKind), zone: "mainland" })
+    : result?.ok
+      ? result.shipping
+      : result?.ok === false
+        ? result.shipping ?? null
+        : null;
   const totalCents = subtotalCents - discountCents + (quote?.totalCents ?? 0);
-  const deliverable = result?.ok === true;
+  // Only an empty or wrongly formatted postcode, or a failed check, blocks a
+  // German order — foreign deliveries and unknown postcodes are orderable.
+  const deliverable =
+    isForeign ||
+    result?.ok === true ||
+    (result?.ok === false && result.reason === "unknown" && result.shipping != null);
   const hasPayment = paymentOptions.length > 0;
   const canOrder =
     Object.keys(errors).length === 0 && deliverable && count > 0 && Boolean(method) && hasPayment;
 
   const update = (name: keyof AddressFields) => (value: string) => {
     if (name === "postcode") {
-      const clean = value.replace(/\D/g, "").slice(0, 5);
+      // German postcodes are digits only; foreign ones may carry letters or
+      // dashes, and no longer drive the German delivery check.
+      const foreign = fields.country !== "DE";
+      const clean = foreign
+        ? value.replace(/[^A-Za-z0-9 -]/g, "").slice(0, 10)
+        : value.replace(/\D/g, "").slice(0, 5);
       setFields((previous) => ({ ...previous, postcode: clean }));
-      setPostcode(clean);
+      if (!foreign) setPostcode(clean);
       return;
     }
     setFields((previous) => ({ ...previous, [name]: value }));
@@ -410,8 +433,8 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
               label="Postleitzahl"
               name="postcode"
               autoComplete="postal-code"
-              inputMode="numeric"
-              maxLength={5}
+              inputMode={isForeign ? "text" : "numeric"}
+              maxLength={isForeign ? 10 : 5}
               value={fields.postcode}
               onChange={update("postcode")}
               error={touched ? errors.postcode : undefined}
@@ -424,13 +447,27 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
               value={fields.city}
               onChange={update("city")}
               error={touched ? errors.city : undefined}
-              hint={resolvedCity ? `Laut PLZ: ${resolvedCity}` : undefined}
+              hint={!isForeign && resolvedCity ? `Laut PLZ: ${resolvedCity}` : undefined}
             />
             <div className="sm:col-span-2">
-              <Label>Land</Label>
-              <Input value="Deutschland" readOnly disabled className="mt-1" />
+              <Label htmlFor="country">Land</Label>
+              <select
+                id="country"
+                name="country"
+                autoComplete="country"
+                value={fields.country}
+                onChange={(event) => update("country")(event.target.value)}
+                className="border-border bg-surface text-text focus-visible:outline-accent mt-1 h-11 w-full rounded-md border px-3 text-sm focus-visible:outline-3 focus-visible:outline-offset-2"
+              >
+                {EUROPEAN_COUNTRIES.map((country) => (
+                  <option key={country.code} value={country.code}>
+                    {country.label}
+                  </option>
+                ))}
+              </select>
               <p className="text-muted mt-1 text-xs">
-                Wir liefern derzeit ausschließlich innerhalb Deutschlands.
+                Wir liefern in alle europäischen Länder. Für Deutschland prüfen wir die PLZ und
+                weisen gegebenenfalls einen Inselzuschlag aus.
               </p>
             </div>
             <Field
@@ -466,24 +503,79 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
           </CardHeader>
           <CardContent>
             <div role="status" aria-live="polite" className="text-sm">
-              {fields.postcode.length !== 5 && (
+              {isForeign && (
+                <div className="flex items-start gap-2">
+                  <CheckCircle2
+                    className="text-success mt-0.5 size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <p className="text-text font-medium">
+                      Versand nach Europa ({countryLabel(fields.country)})
+                    </p>
+                    {quote && (
+                      <>
+                        <p className="text-muted mt-1">
+                          {SHIPPING_CLASS_LABEL[quote.shippingClass]}
+                        </p>
+                        <p className="text-muted">
+                          {quote.free ? (
+                            <span className="text-success font-medium">versandkostenfrei</span>
+                          ) : (
+                            <span className="text-text font-mono font-medium tabular-nums">
+                              {formatPrice(quote.totalCents)}
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-muted mt-1 text-xs">
+                          Einheitlicher Europatarif wie in Deutschland.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              {!isForeign && fields.postcode.length !== 5 && (
                 <p className="text-muted">
                   Geben Sie Ihre Postleitzahl ein, um Versandart und Kosten zu sehen.
                 </p>
               )}
-              {fields.postcode.length === 5 && checking && (
+              {!isForeign && fields.postcode.length === 5 && checking && (
                 <p className="text-muted flex items-center gap-2">
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                   Liefergebiet wird geprüft …
                 </p>
               )}
-              {!checking && result?.ok === false && (
+              {!isForeign && !checking && result?.ok === false && result.reason === "unknown" && (
+                <div className="border-warning/30 bg-warning/5 flex items-start gap-2 rounded-lg border p-3">
+                  <AlertTriangle
+                    className="text-warning mt-0.5 size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <div className="text-sm">
+                    <p>{result.message}</p>
+                    {result.shipping && (
+                      <p className="text-muted mt-1">
+                        {result.shippingLabel} —{" "}
+                        {result.shipping.free ? (
+                          <span className="text-success font-medium">versandkostenfrei</span>
+                        ) : (
+                          <span className="text-text font-mono font-medium tabular-nums">
+                            {formatPrice(result.shipping.totalCents)}
+                          </span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {!isForeign && !checking && result?.ok === false && result.reason !== "unknown" && (
                 <p className="text-danger flex items-start gap-2">
                   <XCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                   <span>{result.message}</span>
                 </p>
               )}
-              {!checking && result?.ok === true && (
+              {!isForeign && !checking && result?.ok === true && (
                 <div className="flex items-start gap-2">
                   <CheckCircle2
                     className="text-success mt-0.5 size-4 shrink-0"
@@ -573,7 +665,7 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
         {touched && !canOrder && !submitError && (
           <p className="text-danger text-sm" role="alert">
             {!deliverable
-              ? "Bitte geben Sie eine gültige deutsche Lieferadresse an."
+              ? "Bitte geben Sie eine gültige Lieferadresse an."
               : !hasPayment
                 ? "Zurzeit ist keine Zahlungsart verfügbar."
                 : !method

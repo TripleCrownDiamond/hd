@@ -8,7 +8,11 @@ import { saveReview, deleteReview } from "../actions";
 
 export const dynamic = "force-dynamic";
 
-const STATUSES = ["pending", "approved", "rejected"] as const;
+const STATUSES: Array<[string, string]> = [
+  ["pending", "En attente"],
+  ["approved", "Approuvé"],
+  ["rejected", "Rejeté"],
+];
 const STATUS_VARIANT: Record<string, "warning" | "success" | "info"> = {
   pending: "warning",
   approved: "success",
@@ -19,13 +23,13 @@ function ReviewForm({ review }: { review?: ReviewRow }) {
   return (
     <form action={saveReview} className="grid gap-4 md:grid-cols-2">
       {review && <input type="hidden" name="id" value={review.id} />}
-      <Field label="Name">
+      <Field label="Nom">
         <input name="author_name" defaultValue={review?.author_name ?? ""} className={fieldClass} required />
       </Field>
-      <Field label="Ort (optional)">
+      <Field label="Ville (facultatif)">
         <input name="location" defaultValue={review?.location ?? ""} className={fieldClass} />
       </Field>
-      <Field label="Sterne (1–5)">
+      <Field label="Étoiles (1–5)">
         <input
           name="rating"
           type="number"
@@ -36,7 +40,7 @@ function ReviewForm({ review }: { review?: ReviewRow }) {
           required
         />
       </Field>
-      <Field label="Datum">
+      <Field label="Date">
         <input
           name="reviewed_on"
           type="date"
@@ -45,33 +49,33 @@ function ReviewForm({ review }: { review?: ReviewRow }) {
         />
       </Field>
       <div className="md:col-span-2">
-        <Field label="Titel (optional)">
+        <Field label="Titre (facultatif)">
           <input name="title" defaultValue={review?.title ?? ""} className={fieldClass} />
         </Field>
       </div>
       <div className="md:col-span-2">
-        <Field label="Text">
+        <Field label="Texte">
           <textarea name="body" defaultValue={review?.body ?? ""} className={areaClass} required />
         </Field>
       </div>
-      <Field label="Produkt-ID (optional)" hint="Leer = Shop-Bewertung auf der Startseite">
+      <Field label="ID produit (facultatif)" hint="Vide = avis boutique sur la page d'accueil">
         <input name="product_id" defaultValue={review?.product_id ?? ""} className={fieldClass} />
       </Field>
-      <Field label="Status">
+      <Field label="Statut">
         <select name="status" defaultValue={review?.status ?? "approved"} className={fieldClass}>
-          {STATUSES.map((status) => (
+          {STATUSES.map(([status, label]) => (
             <option key={status} value={status}>
-              {status}
+              {label}
             </option>
           ))}
         </select>
       </Field>
       <label className="text-text flex items-center gap-2 text-sm md:col-span-2">
         <input type="checkbox" name="verified" defaultChecked={review?.verified ?? false} />
-        Verifizierter Kauf
+        Achat vérifié
       </label>
       <div className="md:col-span-2">
-        <Button type="submit">{review ? "Speichern" : "Bewertung anlegen"}</Button>
+        <Button type="submit">{review ? "Enregistrer" : "Créer l'avis"}</Button>
       </div>
     </form>
   );
@@ -89,20 +93,20 @@ export default async function ReviewsAdminPage() {
   return (
     <div className="space-y-8">
       <AdminHeader
-        eyebrow="Storefront"
-        title="Bewertungen"
-        description="Kundenbewertungen. Nur freigegebene (approved) erscheinen im Shop; ohne Produkt-ID gelten sie als Shop-Bewertung auf der Startseite."
+        eyebrow="Boutique"
+        title="Avis"
+        description="Avis clients. Seuls les avis approuvés apparaissent dans la boutique ; sans ID produit, ils sont considérés comme un avis boutique sur la page d'accueil."
       />
 
       <Card>
         <CardContent className="pt-6">
-          <h2 className="text-text mb-4 font-medium">Neue Bewertung</h2>
+          <h2 className="text-text mb-4 font-medium">Nouvel avis</h2>
           <ReviewForm />
         </CardContent>
       </Card>
 
       {reviews.length === 0 ? (
-        <EmptyAdmin>Noch keine Bewertungen.</EmptyAdmin>
+        <EmptyAdmin>Aucun avis pour le moment.</EmptyAdmin>
       ) : (
         <div className="space-y-3">
           {reviews.map((review) => (
@@ -111,13 +115,13 @@ export default async function ReviewsAdminPage() {
                 <details>
                   <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3">
                     <span className="flex items-center gap-2">
-                      <Badge variant={STATUS_VARIANT[review.status]}>{review.status}</Badge>
+                      <Badge variant={STATUS_VARIANT[review.status]}>{STATUSES.find(([status]) => status === review.status)?.[1] ?? review.status}</Badge>
                       <strong>{review.author_name}</strong>
                       <span className="text-muted">
                         {"★".repeat(review.rating)}
                         {"☆".repeat(5 - review.rating)}
                       </span>
-                      {review.product_id && <span className="text-muted text-xs">Produkt</span>}
+                      {review.product_id && <span className="text-muted text-xs">Produit</span>}
                     </span>
                     <span className="text-muted text-sm">{review.reviewed_on}</span>
                   </summary>
@@ -128,7 +132,7 @@ export default async function ReviewsAdminPage() {
                   <form action={deleteReview} className="mt-3">
                     <input type="hidden" name="id" value={review.id} />
                     <Button variant="ghost" size="sm" className="text-danger">
-                      Löschen
+                      Supprimer
                     </Button>
                   </form>
                 </details>

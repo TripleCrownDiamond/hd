@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { paymentReference, toPaymentOptions, type PaymentSettingsRow } from "./config";
+import {
+  isPlaceholderBankData,
+  paymentReference,
+  PLACEHOLDER_ACCOUNT_HOLDER,
+  PLACEHOLDER_IBAN,
+  toPaymentOptions,
+  type BankTransferOption,
+  type PaymentSettingsRow,
+} from "./config";
 
 const EMPTY: PaymentSettingsRow = {
   bank_transfer_enabled: false,
@@ -63,6 +71,21 @@ describe("toPaymentOptions", () => {
     expect(options[0]).toMatchObject({ method: "bank_transfer", iban: "DE89370400440532013000" });
   });
 
+  it("shows bank transfer with the seeded placeholder account", () => {
+    // The shop ships with the placeholder enabled so the checkout always has a
+    // working method; it must surface as an option but be flagged as placeholder.
+    const row: PaymentSettingsRow = {
+      ...EMPTY,
+      bank_transfer_enabled: true,
+      bank_account_holder: PLACEHOLDER_ACCOUNT_HOLDER,
+      bank_iban: PLACEHOLDER_IBAN,
+    };
+    const options = toPaymentOptions(row);
+    expect(options).toHaveLength(1);
+    expect(options[0]).toMatchObject({ method: "bank_transfer" });
+    expect(isPlaceholderBankData(options[0] as BankTransferOption)).toBe(true);
+  });
+
   it("orders bank transfer before card before crypto", () => {
     const row: PaymentSettingsRow = {
       ...EMPTY,
@@ -81,6 +104,44 @@ describe("toPaymentOptions", () => {
       "card",
       "crypto",
     ]);
+  });
+});
+
+describe("isPlaceholderBankData", () => {
+  it("detects the seeded placeholder account", () => {
+    expect(
+      isPlaceholderBankData({
+        method: "bank_transfer",
+        accountHolder: PLACEHOLDER_ACCOUNT_HOLDER,
+        iban: PLACEHOLDER_IBAN,
+        bic: null,
+        bankName: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts a real account", () => {
+    expect(
+      isPlaceholderBankData({
+        method: "bank_transfer",
+        accountHolder: "HolzDirekt GmbH",
+        iban: "DE89370400440532013000",
+        bic: "COBADEFFXXX",
+        bankName: null,
+      }),
+    ).toBe(false);
+  });
+
+  it("ignores spacing when comparing the IBAN", () => {
+    expect(
+      isPlaceholderBankData({
+        method: "bank_transfer",
+        accountHolder: "Jemand",
+        iban: "DE00 0000 0000 0000 0000 00",
+        bic: null,
+        bankName: null,
+      }),
+    ).toBe(true);
   });
 });
 

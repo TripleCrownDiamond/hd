@@ -10,12 +10,17 @@ import {
 } from "@/components/ui/accordion";
 import { DeliveryChecker } from "@/components/commerce/delivery-checker";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import {
+  FREE_SHIPPING_FROM_CENTS,
+  ISLAND_SURCHARGE_CENTS,
+  SHIPPING_RATES,
+} from "@/lib/shipping/rates";
+import { formatPrice } from "@/lib/utils";
 
-const zones = [
-  { code: "0 – 30 km", label: "Region Nord", desc: "Werktag+1, ab 39 €" },
-  { code: "30 – 100 km", label: "Erweiterte Region", desc: "Werktag+2, ab 59 €" },
-  { code: "100 – 250 km", label: "Deutschland Mitte/Süd", desc: "Werktag+3, ab 89 €" },
-  { code: "> 250 km", label: "Nach Absprache", desc: "Sprechen Sie uns an" },
+const rates = [
+  { label: "Paketversand", desc: "Anzündholz und Zubehör", price: SHIPPING_RATES.parcel },
+  { label: "Spedition – Palette", desc: "Brennholz, Pellets, Briketts, Kohle", price: SHIPPING_RATES.freight },
+  { label: "Spedition – Hebebühne", desc: "Kaminöfen", price: SHIPPING_RATES.bulky },
 ];
 
 export default function LiefergebietPage() {
@@ -36,8 +41,9 @@ export default function LiefergebietPage() {
               Liefergebiet prüfen
             </h1>
             <p className="mt-2 max-w-2xl text-muted">
-              Geben Sie Ihre Postleitzahl ein — Sie erhalten sofort Preis, Termin und
-              Zufahrtsanforderungen. Kein „vielleicht&ldquo;, keine Nachverhandlung.
+              Wir liefern in alle europäischen Länder. Für deutsche Postleitzahlen prüft der
+              Rechner Ort, Versandart und Inselzuschlag sofort — kein „vielleicht&ldquo;, keine
+              Nachverhandlung.
             </p>
 
             <div className="mt-6">
@@ -116,27 +122,38 @@ export default function LiefergebietPage() {
                 <MapPin className="size-20 text-white/60" strokeWidth={1.5} />
               </div>
               <CardContent className="pt-6">
-                <CardTitle className="text-base">Lieferzonen</CardTitle>
+                <CardTitle className="text-base">Versandkosten</CardTitle>
                 <CardDescription className="mt-1">
-                  Preise variieren nach Entfernung und Bestellmenge.
+                  Ein Versand pro Bestellung — berechnet wird die teuerste Klasse im Warenkorb.
                 </CardDescription>
                 <ul className="mt-4 space-y-3">
-                  {zones.map((zone) => (
-                    <li key={zone.code} className="flex items-start gap-3">
+                  {rates.map((rate) => (
+                    <li key={rate.label} className="flex items-start gap-3">
                       <Badge variant="default" className="mt-0.5 shrink-0 font-mono tabular-nums">
-                        {zone.code}
+                        {formatPrice(rate.price)}
                       </Badge>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-text">{zone.label}</p>
-                        <p className="text-xs text-muted">{zone.desc}</p>
+                        <p className="text-sm font-medium text-text">{rate.label}</p>
+                        <p className="text-xs text-muted">{rate.desc}</p>
                       </div>
                     </li>
                   ))}
                 </ul>
                 <Separator className="my-4" />
-                <p className="text-xs text-muted">
-                  Wir bedienen nicht alle Regionen Deutschlands. Postleitzahl im Rechner prüfen.
-                </p>
+                <ul className="space-y-2 text-xs text-muted">
+                  <li>
+                    Inselzuschlag auf deutschen Inseln ohne Straßenanbindung:{" "}
+                    {formatPrice(ISLAND_SURCHARGE_CENTS)}.
+                  </li>
+                  <li>
+                    Kostenlose Lieferung bis zur Haustür ab{" "}
+                    {formatPrice(FREE_SHIPPING_FROM_CENTS)} Warenwert.
+                  </li>
+                  <li>
+                    Für Lieferungen außerhalb Deutschlands gilt derselbe Tarif; die PLZ-Prüfung
+                    übernimmt nur deutsche Postleitzahlen.
+                  </li>
+                </ul>
               </CardContent>
             </Card>
           </aside>

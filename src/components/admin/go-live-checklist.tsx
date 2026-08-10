@@ -55,7 +55,7 @@ export async function GoLiveChecklist() {
     readPublishedContentSlugs(),
     // Actually opens the connection and authenticates — a wrong password shows
     // up here rather than in a customer's missing confirmation.
-    verifyEmailTransport().catch(() => ({ ok: false, detail: "Prüfung fehlgeschlagen." })),
+    verifyEmailTransport().catch(() => ({ ok: false, detail: "Vérification échouée." })),
   ]);
 
   const publishedSet = new Set(published);
@@ -65,39 +65,39 @@ export async function GoLiveChecklist() {
   const blockers: Blocker[] = [
     {
       ok: paymentOptions.length > 0,
-      label: "Zahlungsart freigeschaltet",
+      label: "Moyen de paiement activé",
       detail:
         paymentOptions.length > 0
-          ? `${paymentOptions.length} Zahlungsart(en) aktiv.`
-          : "Ohne freigeschaltete Zahlungsart bleibt „Zahlungspflichtig bestellen“ deaktiviert — es kann niemand bestellen.",
+          ? `${paymentOptions.length} moyen(s) de paiement actif(s).`
+          : "Sans moyen de paiement activé, « Commander en payant » reste désactivé — personne ne peut commander.",
       href: "/admin/zahlungen",
     },
     {
       ok: missingCompany.length === 0,
-      label: "Pflichtangaben nach § 5 DDG",
+      label: "Mentions obligatoires (§ 5 DDG)",
       detail:
         missingCompany.length === 0
-          ? "Impressum vollständig."
-          : `Es fehlen: ${missingCompany.join(", ")}.`,
+          ? "Impressum complet."
+          : `Manquent : ${missingCompany.join(", ")}.`,
       href: "/admin/einstellungen",
     },
     {
       ok: mail.ok,
-      label: "E-Mail-Versand",
+      label: "Envoi d'e-mails",
       detail: emailTransport()
-        ? `${emailTransport() === "smtp" ? "SMTP" : "Resend"} · Admin-Postfach ${
-            adminInbox() ?? "nicht gesetzt"
+        ? `${emailTransport() === "smtp" ? "SMTP" : "Resend"} · Boîte admin ${
+            adminInbox() ?? "non définie"
           } · ${mail.detail}`
-        : "Weder SMTP noch Resend konfiguriert — Bestellbestätigungen und Statusmeldungen werden nicht zugestellt.",
+        : "Ni SMTP ni Resend configuré — les confirmations de commande et les notifications de statut ne seront pas envoyées.",
       href: "/admin/einstellungen",
     },
     {
       ok: unpublishedLegal.length === 0,
-      label: "Rechtstexte im CMS veröffentlicht",
+      label: "Textes juridiques publiés dans le CMS",
       detail:
         unpublishedLegal.length === 0
-          ? "Alle Rechtstexte werden aus dem CMS ausgeliefert."
-          : `${unpublishedLegal.length} Seiten laufen noch auf der Code-Vorlage: ${unpublishedLegal
+          ? "Tous les textes juridiques sont servis depuis le CMS."
+          : `${unpublishedLegal.length} pages utilisent encore le modèle du code : ${unpublishedLegal
               .map((entry) => entry.slug)
               .join(", ")}.`,
       href: "/admin/inhalte",
@@ -109,11 +109,11 @@ export async function GoLiveChecklist() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bereit für den Verkauf</CardTitle>
+        <CardTitle>Prêt à vendre</CardTitle>
         <CardDescription>
           {open.length === 0
-            ? "Alle Voraussetzungen erfüllt."
-            : `${open.length} offene Punkte. Solange der erste offen ist, kann keine Bestellung abgeschlossen werden.`}
+            ? "Toutes les conditions sont réunies."
+            : `${open.length} point(s) en suspens. Tant que le premier n'est pas réglé, aucune commande ne peut être finalisée.`}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -128,12 +128,12 @@ export async function GoLiveChecklist() {
               <div className="min-w-0">
                 <p className="text-text text-sm font-medium">
                   {blocker.label}
-                  <span className="sr-only">{blocker.ok ? " — erledigt" : " — offen"}</span>
+                  <span className="sr-only">{blocker.ok ? " — réglé" : " — en suspens"}</span>
                 </p>
                 <p className="text-muted mt-0.5 text-sm">{blocker.detail}</p>
                 {!blocker.ok && (
                   <Link href={blocker.href} className="text-accent mt-1 inline-block text-sm underline">
-                    Jetzt einrichten
+                    Configurer maintenant
                   </Link>
                 )}
               </div>
@@ -143,7 +143,7 @@ export async function GoLiveChecklist() {
         {emailTransport() ? (
           <form action={sendTestEmail} className="border-border mt-4 border-t pt-4">
             <Button type="submit" variant="secondary" size="sm">
-              Test-E-Mail an {adminInbox()} senden
+              Envoyer un e-mail de test à {adminInbox()}
             </Button>
           </form>
         ) : null}

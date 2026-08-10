@@ -41,7 +41,7 @@ export interface CompanyProfile {
 }
 
 export const COMPANY: CompanyProfile = {
-  name: "Holz Direkt GmbH",
+  name: "holz direkt GmbH - Holzimport",
   legalForm: "GmbH",
   street: "Bergweg 24",
   postalCode: "48485",
@@ -55,7 +55,7 @@ export const COMPANY: CompanyProfile = {
   managingDirector: null,
   registerCourt: "Amtsgericht Steinfurt",
   commercialRegister: "HRB 3447",
-  vatId: null,
+  vatId: "DE813362690",
   taxNumber: null,
   social: {
     facebook: "https://www.facebook.com/profile.php?id=61592760945569",

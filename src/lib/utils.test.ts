@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { cn, computeBasePriceCents, formatPrice, formatBasePrice } from "./utils";
+import {
+  cn,
+  computeBasePriceCents,
+  formatPrice,
+  formatBasePrice,
+  normalizeGermanNumbers,
+} from "./utils";
 
 describe("cn", () => {
   it("merges class names", () => {
@@ -26,6 +32,36 @@ describe("formatPrice", () => {
 
   it("formats zero", () => {
     expect(formatPrice(0).replace(/ /g, " ")).toBe("0,00 €");
+  });
+});
+
+describe("normalizeGermanNumbers", () => {
+  it("converts English decimals to a German comma", () => {
+    expect(normalizeGermanNumbers("548.5 kg")).toBe("548,5 kg");
+    expect(normalizeGermanNumbers("0.8 cm × 105 cm × 1.85 cm")).toBe(
+      "0,8 cm × 105 cm × 1,85 cm",
+    );
+    expect(normalizeGermanNumbers("1.5 Raummeter")).toBe("1,5 Raummeter");
+  });
+
+  it("leaves German text untouched", () => {
+    expect(normalizeGermanNumbers("548,50 kg")).toBe("548,50 kg");
+    expect(normalizeGermanNumbers("3000 kWh")).toBe("3000 kWh");
+  });
+
+  it("keeps three-digit groups as thousands separators", () => {
+    expect(normalizeGermanNumbers("1.234,56 €")).toBe("1.234,56 €");
+    expect(normalizeGermanNumbers("2.100.000")).toBe("2.100.000");
+  });
+
+  it("never mangles dates", () => {
+    expect(normalizeGermanNumbers("01.05.2026")).toBe("01.05.2026");
+    expect(normalizeGermanNumbers("Stand 01.05.2026")).toBe("Stand 01.05.2026");
+  });
+
+  it("does not touch plain integers", () => {
+    expect(normalizeGermanNumbers("6 kW")).toBe("6 kW");
+    expect(normalizeGermanNumbers("150 mm")).toBe("150 mm");
   });
 });
 

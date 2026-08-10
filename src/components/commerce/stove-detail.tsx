@@ -22,7 +22,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import { cn } from "@/lib/utils";
+import { cn, normalizeGermanNumbers } from "@/lib/utils";
 import { media } from "@/lib/media";
 import type { ScrapedProduct, ScrapedVariant } from "@/lib/products/scraped";
 import { useCart } from "@/lib/cart/cart-store";
@@ -127,6 +127,9 @@ export function StoveDetail({ product }: { product: ScrapedProduct }) {
   const extraSpecs = Object.entries(extra)
     .filter(([k]) => !CANONICAL_SPEC_KEYS.has(k))
     .filter(([k]) => !INTERNAL_EXTRA_KEYS.has(k))
+    // Shop codes (EAN, Artikel-Nr.) and the raw Jøtul scrape columns (Atr*)
+    // are internal bookkeeping, never product facts.
+    .filter(([k]) => !INTERNAL_SPEC_KEYS.has(k) && !/^Atr[A-Z]/.test(k))
     // Only scalar values are presentable as a spec row.
     .filter(([, v]) => (typeof v === "string" || typeof v === "number") && v !== "")
     .filter(([k]) => !k.startsWith("Farbe"))
@@ -462,9 +465,10 @@ export function StoveDetail({ product }: { product: ScrapedProduct }) {
                           <div key={k} className="contents">
                             <dt className="text-muted">{k}</dt>
                             {/* Rendered as text: these values come from scraped
-                                pages and must never be injected as HTML. */}
+                                pages and must never be injected as HTML. Numbers
+                                are normalised to the German decimal comma. */}
                             <dd className="text-right font-medium text-text">
-                              {decodeEntities(String(v))}
+                              {normalizeGermanNumbers(decodeEntities(String(v)))}
                             </dd>
                           </div>
                         ))}
@@ -662,6 +666,22 @@ const INTERNAL_EXTRA_KEYS = new Set([
   "price_cents_max",
   "vat_included",
   "variation_axes",
+]);
+
+/** Shop codes that must never render as a spec row (second line of defence). */
+const INTERNAL_SPEC_KEYS = new Set([
+  "EAN",
+  "Artikel-Nr.",
+  "Artikelnr",
+  "Artikelnummer",
+  "SKU",
+  "Preis",
+  "Verfügbarkeit",
+  "Kategorie",
+  "Bestell-Nr.",
+  "Bestellnummer",
+  "Modell",
+  "Marke",
 ]);
 
 const CANONICAL_SPEC_KEYS = new Set([

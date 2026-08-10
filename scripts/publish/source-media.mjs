@@ -20,6 +20,7 @@ import { parseArgs } from "node:util";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { getLicense } from "../scrape/_lib/licenses.mjs";
+import { fetchUrl } from "../scrape/_lib/fetcher.mjs";
 import { rankProductImages } from "../scrape/_lib/images.mjs";
 import { imageKitConfig, uploadToImageKit } from "./_lib/media-provider.mjs";
 
@@ -105,13 +106,34 @@ function slugPart(url) {
 /**
  * Cloudinary is full, so new assets go to ImageKit when it is configured.
  * Existing Cloudinary references stay valid and are still served from there.
+ *
+ * ImageKit downloads the source URL from its own servers, and a growing number
+ * of shops block that (LiteSpeed hotlink protection, geo or UA rules) while a
+ * plain browser fetch succeeds. So the image is downloaded here first, through
+ * the shared rate-limited, retrying fetcher, and the bytes are handed to
+ * ImageKit — one source of truth for how the scrapers fetch.
  */
 let imagekit = null;
+
+async function fetchImageBuffer(url) {
+  const { body } = await fetchUrl(url, {
+    // The publish run is local work, not a web scrape: no robots gate, no disk
+    // cache, and the source already proved it answers — a short interval is
+    // enough to stay polite.
+    checkRobots: false,
+    cacheDir: null,
+    intervalMs: 1200,
+    as: "buffer",
+    maxAttempts: 3,
+  });
+  return Buffer.from(body);
+}
 
 async function uploadFromUrl(url, publicId) {
   if (imagekit) {
     try {
-      return await uploadToImageKit(imagekit, url, publicId);
+      const buffer = await fetchImageBuffer(url);
+      return await uploadToImageKit(imagekit, buffer, publicId, url);
     } catch (error) {
       const message = String(error?.message ?? "");
       // An asset already uploaded under this path is a success, not a failure.

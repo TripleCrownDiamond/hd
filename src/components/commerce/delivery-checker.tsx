@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type FormEvent } from "react";
-import { CheckCircle2, Truck, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Truck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -75,7 +75,9 @@ export function DeliveryChecker({ compact = false }: { compact?: boolean }) {
                 setSubmitted(false);
               }}
               placeholder="Ihre PLZ, z. B. 10115"
-              aria-invalid={tooShort || (showResult && result?.ok === false)}
+              aria-invalid={
+                tooShort || (showResult && result?.ok === false && result.reason !== "unknown")
+              }
               aria-describedby={resultId}
               className="font-mono tabular-nums"
             />
@@ -96,7 +98,30 @@ export function DeliveryChecker({ compact = false }: { compact?: boolean }) {
           </div>
         )}
 
-        {showResult && result?.ok === false && (
+        {showResult && result?.ok === false && result.reason === "unknown" && (
+          <div className="border-warning/30 bg-warning/5 border-t px-6 py-3 text-sm">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="text-warning mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <div className="min-w-0">
+                <span>{result.message}</span>
+                {result.shipping && (
+                  <p className="text-muted mt-1">
+                    {result.shippingLabel} ·{" "}
+                    {result.shipping.free ? (
+                      <span className="text-success font-medium">versandkostenfrei</span>
+                    ) : (
+                      <span className="text-text font-mono font-medium tabular-nums">
+                        {formatPrice(result.shipping.totalCents)}
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showResult && result?.ok === false && result.reason !== "unknown" && (
           <div className="border-danger/20 bg-danger/5 text-danger border-t px-6 py-3 text-sm">
             <div className="flex items-start gap-2">
               <XCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />

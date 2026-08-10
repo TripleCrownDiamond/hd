@@ -54,6 +54,25 @@ export interface CardOption {
 
 export type PaymentOption = BankTransferOption | CryptoOption | CardOption;
 
+/**
+ * The seeded placeholder account.
+ *
+ * The checkout offers bank transfer with it so the shop can take orders right
+ * away, but no customer ever sees these values: the confirmation page and the
+ * order e-mails say the account details arrive by e-mail instead. Replace them
+ * in the admin (/admin/zahlungen) before going live.
+ */
+export const PLACEHOLDER_IBAN = "DE00000000000000000000";
+export const PLACEHOLDER_ACCOUNT_HOLDER = "Bitte in der Verwaltung hinterlegen";
+
+/** True while the seeded placeholder account is still configured. */
+export function isPlaceholderBankData(option: BankTransferOption): boolean {
+  return (
+    option.iban.replace(/\s+/g, "").toUpperCase() === PLACEHOLDER_IBAN ||
+    option.accountHolder.trim() === PLACEHOLDER_ACCOUNT_HOLDER
+  );
+}
+
 export const PAYMENT_LABEL: Record<PaymentMethod, string> = {
   bank_transfer: "Überweisung",
   crypto: "Kryptowährung",

@@ -19,7 +19,11 @@ import "server-only";
 import { COMPANY, orGap, TRADING_NAME } from "@/lib/company";
 import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
 import { getSiteSettings } from "@/lib/settings-server";
-import type { PaymentSettingsRow } from "@/lib/payments/config";
+import {
+  PLACEHOLDER_ACCOUNT_HOLDER,
+  PLACEHOLDER_IBAN,
+  type PaymentSettingsRow,
+} from "@/lib/payments/config";
 import type { SiteSettingsRow } from "@/lib/db/types";
 import {
   FREE_SHIPPING_FROM_CENTS,
@@ -144,7 +148,21 @@ export async function expandShortcodes(text: string): Promise<string> {
       return read(settings?.[column]) ?? fallback;
     }
     const paymentField = PAYMENT_FIELDS[name];
-    if (paymentField) return read(payment?.[paymentField]);
+    if (paymentField) {
+      const value = read(payment?.[paymentField]);
+      // The seeded placeholder account must never be rendered as real bank
+      // data on a public page: resolve it to the gap marker instead.
+      if (
+        value &&
+        ((paymentField === "bank_iban" &&
+          value.replace(/\s+/g, "").toUpperCase() === PLACEHOLDER_IBAN) ||
+          (paymentField === "bank_account_holder" &&
+            value.trim() === PLACEHOLDER_ACCOUNT_HOLDER))
+      ) {
+        return null;
+      }
+      return value;
+    }
 
     const shipping = SHIPPING_VALUES[name];
     if (shipping) return shipping();

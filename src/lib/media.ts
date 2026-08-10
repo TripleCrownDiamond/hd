@@ -1,27 +1,45 @@
 /**
  * Build a delivery URL for a stored product-media reference.
  *
- * Two providers coexist: Cloudinary holds every asset published before the
- * quota was reached, ImageKit holds everything since. A reference prefixed
- * `imagekit:` is an ImageKit path; a bare value is a Cloudinary public_id.
- * Callers pass the reference and never need to know which is which.
+ * Three providers coexist:
+ *
+ * - `local:` — self-hosted in the public Supabase Storage bucket
+ *   `produkt-bilder` (scripts/publish/migrate-media-local.mjs moves images
+ *   there and rewrites the reference). This is the target: everything is being
+ *   migrated off the CDNs.
+ * - `imagekit:` — ImageKit, used for uploads after Cloudinary's quota filled.
+ * - a bare value — a Cloudinary public_id, everything published before that.
+ *
+ * Callers pass the reference and never need to know which is which. Local
+ * images are served without CDN transforms and resized on the fly by the Next
+ * image optimizer (sharp on the same server), since the app uses the default
+ * loader.
  */
 
-import { cld, type CldOptions } from "./cloudinary";
+import { cld, localMediaUrl, isLocalRef, type CldOptions } from "./cloudinary";
 
 const IMAGEKIT_PREFIX = "imagekit:";
-const IMAGEKIT_ENDPOINT =
-  process.env.NEXT_PUBLIC_IMAGEKIT_URL ?? "https://ik.imagekit.io/fghqtx0enp";
+
+function imageKitEndpoint(): string {
+  return process.env.NEXT_PUBLIC_IMAGEKIT_URL ?? "https://ik.imagekit.io/fghqtx0enp";
+}
 
 export function isImageKitRef(reference: string): boolean {
   return reference.startsWith(IMAGEKIT_PREFIX);
 }
 
+export { isLocalRef, localMediaUrl } from "./cloudinary";
+
 /**
- * @param reference stored media reference (`imagekit:path` or a Cloudinary id)
+ * @param reference stored media reference (`local:path`, `imagekit:path`, or a
+ *   Cloudinary id)
  * @param options   width/height/crop, mapped to each provider's own syntax
  */
 export function media(reference: string, options: CldOptions = {}): string {
+  if (isLocalRef(reference)) {
+    // The Next optimizer handles resizing locally; the path is the only input.
+    return localMediaUrl(reference.slice("local:".length));
+  }
   if (!isImageKitRef(reference)) return cld(reference, options);
 
   const path = reference.slice(IMAGEKIT_PREFIX.length);
@@ -37,5 +55,5 @@ export function media(reference: string, options: CldOptions = {}): string {
     .filter(Boolean)
     .join(",");
 
-  return `${IMAGEKIT_ENDPOINT}/${path}?tr=${transforms}`;
+  return `${imageKitEndpoint()}/${path}?tr=${transforms}`;
 }

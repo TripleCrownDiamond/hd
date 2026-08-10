@@ -34,7 +34,7 @@ export async function notifyOrderPlaced(data: OrderEmailData, customerEmail: str
     `Versand: ${data.shippingCents === 0 ? "kostenlos" : money(data.shippingCents)}\n` +
     `<b>Gesamt: ${money(data.totalCents)}</b>\n` +
     `Zahlung: ${escapeHtml(data.paymentLabel)}${data.paymentReference ? ` (${escapeHtml(data.paymentReference)})` : ""}\n` +
-    `${escapeHtml(data.address.street)} ${escapeHtml(data.address.houseNumber)}, ${escapeHtml(data.address.postcode)} ${escapeHtml(data.address.city)}`;
+    `${escapeHtml(data.address.street)} ${escapeHtml(data.address.houseNumber)}, ${escapeHtml(data.address.postcode)} ${escapeHtml(data.address.city)}${data.address.country ? `, ${escapeHtml(data.address.country)}` : ""}`;
 
   await Promise.allSettled([
     sendEmail({ to: customerEmail, ...customer }),

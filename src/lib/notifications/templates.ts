@@ -39,7 +39,7 @@ export interface OrderEmailData {
   paymentLabel: string;
   paymentReference: string | null;
   bank?: { accountHolder: string; iban: string; bic: string | null } | null;
-  address: { street: string; houseNumber: string; postcode: string; city: string };
+  address: { street: string; houseNumber: string; postcode: string; city: string; country?: string };
 }
 
 function lineTable(lines: OrderEmailLine[]): string {
@@ -76,7 +76,7 @@ export function orderConfirmationEmail(data: OrderEmailData): { subject: string;
 ${lineTable(data.lines)}
 ${totals(data)}
 ${bankBlock(data)}
-<p style="font-size:14px;margin-top:16px;">Lieferadresse: ${data.address.street} ${data.address.houseNumber}, ${data.address.postcode} ${data.address.city}</p>`;
+<p style="font-size:14px;margin-top:16px;">Lieferadresse: ${data.address.street} ${data.address.houseNumber}, ${data.address.postcode} ${data.address.city}${data.address.country ? `, ${data.address.country}` : ""}</p>`;
   const text = [
     `Hallo ${data.customerName},`,
     `vielen Dank für Ihre Bestellung ${data.orderNumber}.`,
@@ -99,7 +99,7 @@ export function newOrderEmail(data: OrderEmailData): { subject: string; html: st
 <p style="font-size:14px;color:#8a8079;">Zahlung: ${data.paymentLabel}${data.paymentReference ? ` · Referenz ${data.paymentReference}` : ""}</p>
 ${lineTable(data.lines)}
 ${totals(data)}
-<p style="font-size:14px;margin-top:16px;">Lieferung: ${data.address.street} ${data.address.houseNumber}, ${data.address.postcode} ${data.address.city}</p>`;
+<p style="font-size:14px;margin-top:16px;">Lieferung: ${data.address.street} ${data.address.houseNumber}, ${data.address.postcode} ${data.address.city}${data.address.country ? `, ${data.address.country}` : ""}</p>`;
   const text = `Neue Bestellung ${data.orderNumber} von ${data.customerName}: ${money(data.totalCents)} (${data.paymentLabel}).`;
   return { subject, html: layout(`Neue Bestellung ${data.orderNumber}`, inner), text };
 }

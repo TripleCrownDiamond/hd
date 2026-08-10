@@ -4,17 +4,17 @@ import { Logo } from "@/components/layout/logo";
 import { requireAdminAccess } from "@/lib/auth/admin";
 
 const adminNav = [
-  { label: "Übersicht", href: "/admin" },
-  { label: "Bestellungen", href: "/admin/bestellungen" },
-  { label: "Produkte", href: "/admin/produkte" },
-  { label: "Kunden", href: "/admin/kunden" },
-  { label: "Rechnungen", href: "/admin/rechnungen" },
-  { label: "Rabatte", href: "/admin/rabatte" },
+  { label: "Aperçu", href: "/admin" },
+  { label: "Commandes", href: "/admin/bestellungen" },
+  { label: "Produits", href: "/admin/produkte" },
+  { label: "Clients", href: "/admin/kunden" },
+  { label: "Factures", href: "/admin/rechnungen" },
+  { label: "Promotions", href: "/admin/rabatte" },
   { label: "FAQ & Chat", href: "/admin/faq" },
-  { label: "Seiten & Artikel", href: "/admin/inhalte" },
-  { label: "Bewertungen", href: "/admin/bewertungen" },
-  { label: "Zahlungen", href: "/admin/zahlungen" },
-  { label: "Einstellungen", href: "/admin/einstellungen" },
+  { label: "Pages & Articles", href: "/admin/inhalte" },
+  { label: "Avis", href: "/admin/bewertungen" },
+  { label: "Paiements", href: "/admin/zahlungen" },
+  { label: "Réglages", href: "/admin/einstellungen" },
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     <div className="flex min-h-screen bg-elevated/60">
       <aside
         className="hidden w-60 shrink-0 border-r border-border bg-brand text-white lg:flex lg:flex-col"
-        aria-label="Adminnavigation"
+        aria-label="Navigation admin"
       >
         <div className="border-b border-white/10 px-5 py-5">
           <Link href="/admin" className="flex items-center gap-2 tracking-tight">
@@ -48,16 +48,28 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </ul>
         </nav>
         <div className="border-t border-white/10 px-5 py-4 text-xs text-white/50">
-          Rollenprüfung aktiv. MFA noch offen.
+          Vérification des rôles active. MFA à venir.
         </div>
       </aside>
-      <main id="admin-main" className="flex-1 overflow-x-hidden">
-        <nav className="border-border bg-surface overflow-x-auto border-b lg:hidden" aria-label="Adminnavigation">
+      <main id="admin-main" className="min-w-0 flex-1 overflow-x-hidden">
+        <nav
+          className="border-border bg-surface overflow-x-auto border-b lg:hidden"
+          aria-label="Navigation admin"
+        >
           <ul className="flex min-w-max gap-1 p-2">
-            {adminNav.map((item) => <li key={item.href}><Link href={item.href} className="text-muted hover:bg-elevated hover:text-text block rounded-md px-3 py-2 text-sm">{item.label}</Link></li>)}
+            {adminNav.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className="text-muted hover:bg-elevated hover:text-text block whitespace-nowrap rounded-md px-3 py-2 text-sm"
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
-        <div className="px-4 py-6 md:px-8 md:py-10">{children}</div>
+        <div className="min-w-0 px-4 py-6 md:px-8 md:py-10">{children}</div>
       </main>
     </div>
   );

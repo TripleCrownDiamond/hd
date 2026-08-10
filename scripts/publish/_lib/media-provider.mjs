@@ -17,19 +17,25 @@ export function isImageKit(reference) {
 }
 
 /**
- * Upload a remote image to ImageKit.
+ * Upload an image to ImageKit.
+ *
+ * The bytes are downloaded here rather than inside ImageKit: shops increasingly
+ * block the fetch ImageKit makes from its own servers (hotlink protection, geo
+ * or UA rules) while the same URL answers a plain browser fetch. Passing the
+ * buffer also keeps one download path for every source — the shared fetcher.
  *
  * @param {object} config  { privateKey, urlEndpoint }
- * @param {string} url     source image
+ * @param {Buffer} buffer  image bytes
  * @param {string} path    target path, e.g. "holzkraft/products/rika/trio/01-trio"
+ * @param {string} [sourceUrl] origin, for the upload error message only
  * @returns {Promise<string>} the stored reference, `imagekit:<filePath>`
  */
-export async function uploadToImageKit(config, url, path) {
+export async function uploadToImageKit(config, buffer, path, sourceUrl = null) {
   const folder = path.split("/").slice(0, -1).join("/");
   const fileName = path.split("/").pop();
 
   const form = new FormData();
-  form.append("file", url);
+  form.append("file", new Blob([buffer]), fileName);
   form.append("fileName", fileName);
   form.append("folder", `/${folder}`);
   // Keep our own name: ImageKit otherwise appends a random suffix and the
@@ -46,7 +52,7 @@ export async function uploadToImageKit(config, url, path) {
 
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload?.message ?? `ImageKit HTTP ${response.status}`);
+    throw new Error(`${payload?.message ?? `ImageKit HTTP ${response.status}`}${sourceUrl ? ` (${sourceUrl})` : ""}`);
   }
   return `${IMAGEKIT_PREFIX}${payload.filePath.replace(/^\//, "")}`;
 }
