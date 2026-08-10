@@ -45,3 +45,8 @@ tmp/
 
 # TypeScript incremental build info
 tsconfig.tsbuildinfo
+# Backups d'environnement. `.env.local` est ignore, mais une copie
+# `.env.local.bak` ne l'etait pas et un `git add -A` l'aurait committee
+# avec la cle service_role dedans.
+*.bak
+.env*.backup
