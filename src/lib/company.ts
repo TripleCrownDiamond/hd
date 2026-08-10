@@ -44,7 +44,7 @@ export const COMPANY: CompanyProfile = {
   country: "Deutschland",
   email: null,
   supportEmail: null,
-  phone: null,
+  phone: "+49 1521 6824424",
   managingDirector: null,
   registerCourt: "Amtsgericht Steinfurt",
   commercialRegister: "HRB 3447",

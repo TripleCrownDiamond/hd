@@ -4,6 +4,7 @@ import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin, Youtube } from "luc
 import { FooterNewsletter } from "@/components/layout/footer-newsletter";
 import { Logo } from "@/components/layout/logo";
 import { BRAND_NAME } from "@/lib/brand";
+import { getCompany } from "@/lib/company-server";
 import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
 import type { SiteSettingsRow } from "@/lib/db/types";
 
@@ -55,14 +56,26 @@ const footerSections = [
 export async function Footer() {
   const { data } = await getMigrationAwarePublicSupabase().from("site_settings").select("*").eq("id", 1).maybeSingle();
   const settings = data as SiteSettingsRow | null;
-  const hasAddress = Boolean(settings?.street || settings?.postal_code || settings?.city);
-  const hasContact = Boolean(hasAddress || settings?.phone || settings?.phone_secondary || settings?.email || settings?.support_email);
+  // Same resolution the legal pages use — an admin edit wins, otherwise the
+  // details the company has confirmed in code. Without this the footer stayed
+  // blank on a database whose settings row has never been filled in.
+  const company = await getCompany();
+  const contact = {
+    phone: company.phone,
+    phoneSecondary: settings?.phone_secondary ?? null,
+    email: company.email,
+    supportEmail: company.supportEmail,
+  };
+  const hasAddress = Boolean(company.street || company.postalCode || company.city);
+  const hasContact = Boolean(
+    hasAddress || contact.phone || contact.phoneSecondary || contact.email || contact.supportEmail,
+  );
   const legalDetails = [
-    settings?.vat_id ? `USt-IdNr.: ${settings.vat_id}` : null,
-    settings?.tax_number ? `Steuernummer: ${settings.tax_number}` : null,
-    settings?.commercial_register ? `Handelsregister: ${settings.commercial_register}` : null,
-    settings?.register_court ? `Registergericht: ${settings.register_court}` : null,
-    settings?.managing_director ? `Geschäftsführung: ${settings.managing_director}` : null,
+    company.vatId ? `USt-IdNr.: ${company.vatId}` : null,
+    company.taxNumber ? `Steuernummer: ${company.taxNumber}` : null,
+    company.commercialRegister ? `Handelsregister: ${company.commercialRegister}` : null,
+    company.registerCourt ? `Registergericht: ${company.registerCourt}` : null,
+    company.managingDirector ? `Geschäftsführung: ${company.managingDirector}` : null,
   ].filter((detail): detail is string => Boolean(detail));
   const socials = [
     [settings?.social_instagram, "Instagram", Instagram], [settings?.social_facebook, "Facebook", Facebook],
@@ -110,26 +123,27 @@ export async function Footer() {
               {hasAddress ? <li className="flex items-start gap-2">
                 <MapPin className="mt-0.5 size-4 shrink-0" />
                 <span>
-                  {[settings?.company_name, settings?.legal_form].filter(Boolean).join(" ")}<br />
-                  {settings?.street}<br />
-                  {[settings?.postal_code, settings?.city].filter(Boolean).join(" ")}
+                  {company.name}<br />
+                  {company.street}<br />
+                  {[company.postalCode, company.city].filter(Boolean).join(" ")}
                 </span>
               </li> : null}
-              {settings?.phone ? <li className="flex items-center gap-2">
+              {contact.phone ? <li className="flex items-center gap-2">
                 <Phone className="size-4 shrink-0" />
-                <a href={`tel:${settings.phone}`} className="hover:text-white">{settings.phone}</a>
+                {/* tel: cannot carry spaces — strip them, keep the readable label. */}
+                <a href={`tel:${contact.phone.replace(/\s+/g, "")}`} className="hover:text-white">{contact.phone}</a>
               </li> : null}
-              {settings?.phone_secondary ? <li className="flex items-center gap-2">
+              {contact.phoneSecondary ? <li className="flex items-center gap-2">
                 <Phone className="size-4 shrink-0" />
-                <a href={`tel:${settings.phone_secondary}`} className="hover:text-white">{settings.phone_secondary}</a>
+                <a href={`tel:${contact.phoneSecondary.replace(/\s+/g, "")}`} className="hover:text-white">{contact.phoneSecondary}</a>
               </li> : null}
-              {settings?.email ? <li className="flex items-center gap-2">
+              {contact.email ? <li className="flex items-center gap-2">
                 <Mail className="size-4 shrink-0" />
-                <a href={`mailto:${settings.email}`} className="hover:text-white">{settings.email}</a>
+                <a href={`mailto:${contact.email}`} className="hover:text-white">{contact.email}</a>
               </li> : null}
-              {settings?.support_email ? <li className="flex items-center gap-2">
+              {contact.supportEmail ? <li className="flex items-center gap-2">
                 <Mail className="size-4 shrink-0" />
-                <a href={`mailto:${settings.support_email}`} className="hover:text-white">{settings.support_email}</a>
+                <a href={`mailto:${contact.supportEmail}`} className="hover:text-white">{contact.supportEmail}</a>
               </li> : null}
             </ul>
             <div className="mt-4 flex gap-2">{socials.map(([url,label,Icon]) => url ? <a key={label} href={url} target="_blank" rel="noreferrer noopener" aria-label={label} className="rounded-md border border-white/20 p-2 hover:bg-white/10"><Icon className="size-4" /></a> : null)}</div>
