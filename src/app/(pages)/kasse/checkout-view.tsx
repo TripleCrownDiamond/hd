@@ -240,11 +240,6 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
     }
   }, [resolvedCity, fields.city]);
 
-  // Default to the first offered method, but never override a manual choice.
-  useEffect(() => {
-    if (!method && paymentOptions.length > 0) setMethod(paymentOptions[0]!.method);
-  }, [method, paymentOptions]);
-
   const errors = useMemo(() => validate(fields), [fields]);
   // Outside Germany no postcode directory applies: the quote is the flat
   // European tariff, computed with the same function the server uses, so the
@@ -258,13 +253,39 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
         ? result.shipping ?? null
         : null;
   const totalCents = subtotalCents - discountCents + (quote?.totalCents ?? 0);
+
+  // The deposit option only applies above its configured minimum order value,
+  // so it is filtered out below the threshold instead of being offered dead.
+  const eligibleOptions = useMemo(
+    () =>
+      paymentOptions.filter(
+        (option) => option.method !== "deposit" || totalCents >= option.minCents,
+      ),
+    [paymentOptions, totalCents],
+  );
+  const depositOption =
+    eligibleOptions.find((option) => option.method === "deposit") ?? null;
+
+  // Default to the first offered method, but never override a manual choice.
+  useEffect(() => {
+    if (!method && eligibleOptions.length > 0) setMethod(eligibleOptions[0]!.method);
+  }, [method, eligibleOptions]);
+
+  // If the cart drops below the deposit minimum after it was selected, fall
+  // back to a method that is still offered rather than submitting an invalid one.
+  useEffect(() => {
+    if (method === "deposit" && !depositOption) {
+      setMethod(eligibleOptions.find((option) => option.method !== "deposit")?.method ?? "");
+    }
+  }, [method, depositOption, eligibleOptions]);
+
   // Only an empty or wrongly formatted postcode, or a failed check, blocks a
   // German order — foreign deliveries and unknown postcodes are orderable.
   const deliverable =
     isForeign ||
     result?.ok === true ||
     (result?.ok === false && result.reason === "unknown" && result.shipping != null);
-  const hasPayment = paymentOptions.length > 0;
+  const hasPayment = eligibleOptions.length > 0;
   const canOrder =
     Object.keys(errors).length === 0 && deliverable && count > 0 && Boolean(method) && hasPayment;
 
@@ -613,7 +634,7 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
             ) : (
               <fieldset className="space-y-3">
                 <legend className="sr-only">Zahlungsart wählen</legend>
-                {paymentOptions.map((option) => (
+                {eligibleOptions.map((option) => (
                   <label
                     key={option.method}
                     className="border-border hover:bg-elevated/60 flex cursor-pointer items-start gap-3 rounded-lg border p-3"
@@ -637,6 +658,8 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
                           `Sichere Zahlung über ${option.provider}. Keine Kartendaten bei uns.`}
                         {option.method === "crypto" &&
                           `Über ${option.provider} · ${option.currencies.join(", ")}`}
+                        {option.method === "deposit" &&
+                          `Sie zahlen heute ${option.percent} % per Überweisung, den Restbetrag nach Lieferung. Ab ${formatPrice(option.minCents)} verfügbar.`}
                       </span>
                     </span>
                   </label>
@@ -652,6 +675,8 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               Bestellung wird angelegt …
             </>
+          ) : method === "deposit" && depositOption ? (
+            `Anzahlung (${depositOption.percent} %) zahlen`
           ) : (
             "Zahlungspflichtig bestellen"
           )}
@@ -738,6 +763,27 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
                   {formatPrice(totalCents)}
                 </dd>
               </div>
+              {method === "deposit" && depositOption && (
+                <>
+                  <div className="text-muted flex justify-between">
+                    <dt>Anzahlung ({depositOption.percent} %)</dt>
+                    <dd className="text-text font-mono tabular-nums">
+                      {formatPrice(
+                        Math.round((totalCents * depositOption.percent) / 100),
+                      )}
+                    </dd>
+                  </div>
+                  <div className="text-muted flex justify-between">
+                    <dt>Restbetrag (nach Lieferung)</dt>
+                    <dd className="text-text font-mono tabular-nums">
+                      {formatPrice(
+                        totalCents -
+                          Math.round((totalCents * depositOption.percent) / 100),
+                      )}
+                    </dd>
+                  </div>
+                </>
+              )}
             </dl>
 
             {quote && !quote.free && quote.remainingForFreeCents > 0 && (

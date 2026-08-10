@@ -70,6 +70,8 @@ export interface OrderEmailData {
   paymentLabel: string;
   paymentReference: string | null;
   bank?: { accountHolder: string; iban: string; bic: string | null } | null;
+  /** When set, the order is paid by Anzahlung and only the deposit is due now. */
+  deposit?: { percent: number; amountCents: number; remainingCents: number } | null;
   address: { street: string; houseNumber: string; postcode: string; city: string; country?: string };
 }
 
@@ -93,9 +95,13 @@ function totals(data: OrderEmailData): string {
 
 function bankBlock(data: OrderEmailData): string {
   if (!data.bank || !data.paymentReference) return "";
+  const headline = data.deposit ? "Bitte überweisen Sie die Anzahlung:" : "Bitte überweisen Sie den Betrag:";
+  const amount = data.deposit
+    ? `Anzahlung (${data.deposit.percent} %): <strong>${money(data.deposit.amountCents)}</strong><br>Restbetrag (nach Lieferung): <strong>${money(data.deposit.remainingCents)}</strong>`
+    : `Betrag: <strong>${money(data.totalCents)}</strong>`;
   return `<div style="background:#f3f7f1;border:1px solid #dce8d8;border-radius:8px;padding:16px;margin-top:16px;font-size:14px;">
-<strong style="color:${FOREST};">Bitte überweisen Sie den Betrag:</strong>
-<div style="margin-top:8px;line-height:1.7;">Kontoinhaber: ${data.bank.accountHolder}<br>IBAN: <span style="font-family:monospace;">${data.bank.iban}</span>${data.bank.bic ? `<br>BIC: ${data.bank.bic}` : ""}<br>Verwendungszweck: <strong>${data.paymentReference}</strong><br>Betrag: <strong>${money(data.totalCents)}</strong></div></div>`;
+<strong style="color:${FOREST};">${headline}</strong>
+<div style="margin-top:8px;line-height:1.7;">Kontoinhaber: ${data.bank.accountHolder}<br>IBAN: <span style="font-family:monospace;">${data.bank.iban}</span>${data.bank.bic ? `<br>BIC: ${data.bank.bic}` : ""}<br>Verwendungszweck: <strong>${data.paymentReference}</strong><br>${amount}</div></div>`;
 }
 
 /** Confirmation for the customer. */
@@ -115,7 +121,9 @@ ${bankBlock(data)}
     `Versand: ${data.shippingCents === 0 ? "kostenlos" : money(data.shippingCents)}`,
     `Gesamt: ${money(data.totalCents)}`,
     data.bank && data.paymentReference
-      ? `Überweisung an ${data.bank.accountHolder}, IBAN ${data.bank.iban}, Verwendungszweck ${data.paymentReference}.`
+      ? data.deposit
+        ? `Anzahlung (${data.deposit.percent} %): ${money(data.deposit.amountCents)} per Überweisung an ${data.bank.accountHolder}, IBAN ${data.bank.iban}, Verwendungszweck ${data.paymentReference}. Restbetrag: ${money(data.deposit.remainingCents)}.`
+        : `Überweisung an ${data.bank.accountHolder}, IBAN ${data.bank.iban}, Verwendungszweck ${data.paymentReference}.`
       : "",
   ]
     .filter(Boolean)

@@ -16,7 +16,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default async function InvoicesAdminPage() {
   const supabase = await getMigrationAwareServerSupabase();
-  const [{ data: invoices }, { data: orders }, { data: settings }, { data: products }] = await Promise.all([
+  const [{ data: invoices }, { data: orders }, { data: settings }, { data: products }, { data: paymentSettings }] = await Promise.all([
     supabase.from("invoices").select("*").order("created_at", { ascending: false }).limit(100),
     supabase.from("orders").select("id,order_number,customer_name,total_cents,created_at").order("created_at", { ascending: false }).limit(100),
     supabase.from("site_settings").select("company_name,street,postal_code,city,vat_id,tax_number").eq("id", 1).maybeSingle(),
@@ -27,6 +27,7 @@ export default async function InvoicesAdminPage() {
       .not("price_cents_public", "is", null)
       .order("model", { ascending: true })
       .limit(500),
+    supabase.from("payment_settings").select("deposit_percent").eq("id", 1).maybeSingle(),
   ]);
   const invoiced = new Set((invoices ?? []).filter((row) => row.kind === "invoice" && row.status !== "void" && row.order_id).map((row) => row.order_id));
   const legalReady = Boolean(settings?.company_name && settings?.street && settings?.postal_code && settings?.city && (settings?.vat_id || settings?.tax_number));
@@ -39,7 +40,10 @@ export default async function InvoicesAdminPage() {
   return <div className="space-y-8"><AdminHeader eyebrow="Finances" title="Factures" description="PDF/A4 avec le logo, les données d'entreprise et le pied légal. Une facture émise et son instantané sont immuables ; les corrections exigent un document séparé." />
     {!legalReady ? <Card><CardContent className="border-amber-500/60 bg-amber-50 pt-6 text-sm"><p className="font-semibold text-amber-800">Données légales incomplètes — l&apos;émission est bloquée tant que ce n&apos;est pas réglé.</p><p className="text-amber-700">Renseignez la raison sociale, l&apos;adresse et la USt-IdNr. ou la Steuernummer dans <Link className="underline" href="/admin/einstellungen">Réglages → Données entreprise</Link>. Sans numéro fiscal, une facture allemande serait invalide.</p></CardContent></Card> : null}
     <Card><CardContent className="pt-6"><h2 className="font-semibold">Facture sans commande</h2><p className="text-muted mt-1 text-sm">Pour une vente conclue à la main, par téléphone ou au dépôt : aucun ordre n&apos;est requis. Les lignes viennent du catalogue ou sont saisies librement — y compris un produit entièrement nouveau, avec l&apos;option de le publier au site.</p>
-      <StandaloneInvoiceForm products={productOptions} />
+      <StandaloneInvoiceForm
+        products={productOptions}
+        depositDefaultPercent={Number(paymentSettings?.deposit_percent ?? 30)}
+      />
     </CardContent></Card>
     <Card><CardContent className="pt-6"><h2 className="font-semibold">Émettre la facture d&apos;une commande</h2><p className="text-muted mt-1 text-sm">Commandes sans facture. Les lignes ajoutées ci-dessous sont incluses dans le PDF ; celles marquées « aussi au site » créent le produit dans le catalogue.</p>
       <div className="mt-4 space-y-2">{(orders ?? []).filter((order) => !invoiced.has(order.id)).map((order) => <div key={order.id} className="rounded-lg border p-3"><InvoiceIssueForm orderId={order.id} orderNumber={order.order_number} customer={order.customer_name} totalCents={order.total_cents} /></div>)}</div>

@@ -127,6 +127,17 @@ export async function generateInvoicePdf(snapshot: Record<string, any>) {
   y -= 20;
   draw("Gesamtbetrag", 380, 11, true);
   draw(money(snapshot.amounts.totalCents), 500, 11, true);
+  // A deposit (Anzahlung) splits the total into what is due now and the rest.
+  const depositCents = Number(snapshot.amounts?.depositCents ?? 0);
+  if (depositCents > 0) {
+    const depositPercent = Number(snapshot.amounts?.depositPercent ?? 0);
+    y -= 16;
+    draw(`Anzahlung (${depositPercent} %)`, 380);
+    draw(`-${money(depositCents)}`, 500);
+    y -= 16;
+    draw("Restbetrag", 380, 10, true);
+    draw(money(Number(snapshot.amounts.totalCents) - depositCents), 500, 10, true);
+  }
 
   // Legal footer: the full company block required on German invoices.
   y = 92;

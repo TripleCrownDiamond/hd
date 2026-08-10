@@ -9,8 +9,12 @@ export interface PlacedOrderResult {
   orderNumber: string;
   totalCents: number;
   shippingCents: number;
-  paymentMethod: "bank_transfer" | "crypto" | "card";
+  paymentMethod: "bank_transfer" | "crypto" | "card" | "deposit";
   paymentReference: string | null;
+  /** Deposit amounts, null when the order is not paid by Anzahlung. */
+  depositCents: number | null;
+  remainingCents: number | null;
+  depositPercent: number | null;
 }
 
 function CopyRow({ label, value }: { label: string; value: string }) {
@@ -99,6 +103,59 @@ export function PaymentInstructions({
         </dl>
         <p className="text-muted mt-3 text-xs">
           Nach Zahlungseingang bestätigen wir Ihre Bestellung und bereiten den Versand vor.
+        </p>
+      </div>
+    );
+  }
+
+  if (order.paymentMethod === "deposit" && option?.method === "deposit") {
+    // The deposit is due now, so it is only offered with a real account — the
+    // placeholder guard is kept for safety against a misconfigured admin.
+    if (
+      isPlaceholderBankData({
+        method: "bank_transfer",
+        accountHolder: option.accountHolder,
+        iban: option.iban,
+        bic: option.bic,
+        bankName: option.bankName,
+      })
+    ) {
+      return (
+        <div>
+          <p className="text-muted text-sm">
+            Bitte überweisen Sie die Anzahlung und geben Sie unbedingt die Referenz an, damit wir
+            Ihre Zahlung zuordnen können. Die Kontodaten erhalten Sie per E-Mail.
+          </p>
+          <dl className="mt-4">
+            {order.paymentReference && (
+              <CopyRow label="Verwendungszweck" value={order.paymentReference} />
+            )}
+            <CopyRow label="Anzahlung" value={formatPrice(order.depositCents ?? order.totalCents)} />
+          </dl>
+        </div>
+      );
+    }
+    return (
+      <div>
+        <p className="text-muted text-sm">
+          Bitte überweisen Sie die Anzahlung auf folgendes Konto. Geben Sie unbedingt die Referenz
+          an, damit wir Ihre Zahlung zuordnen können. Den Restbetrag überweisen Sie nach Erhalt der
+          Rechnung bzw. der Lieferung.
+        </p>
+        <dl className="mt-4">
+          <CopyRow label="Kontoinhaber" value={option.accountHolder} />
+          <CopyRow label="IBAN" value={option.iban} />
+          {option.bic && <CopyRow label="BIC" value={option.bic} />}
+          {option.bankName && <CopyRow label="Bank" value={option.bankName} />}
+          {order.paymentReference && (
+            <CopyRow label="Verwendungszweck" value={order.paymentReference} />
+          )}
+          <CopyRow label="Anzahlung" value={formatPrice(order.depositCents ?? 0)} />
+          <CopyRow label="Restbetrag" value={formatPrice(order.remainingCents ?? 0)} />
+        </dl>
+        <p className="text-muted mt-3 text-xs">
+          Nach Zahlungseingang der Anzahlung bestätigen wir Ihre Bestellung und bereiten den
+          Versand vor.
         </p>
       </div>
     );

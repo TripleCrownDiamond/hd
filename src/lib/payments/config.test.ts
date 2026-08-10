@@ -25,6 +25,17 @@ const EMPTY: PaymentSettingsRow = {
   card_provider: null,
   card_publishable_key: null,
   card_note: null,
+  deposit_enabled: true,
+  deposit_min_cents: 1_000_000,
+  deposit_percent: 30,
+};
+
+/** A fully configured real bank account. */
+const BANK: PaymentSettingsRow = {
+  ...EMPTY,
+  bank_transfer_enabled: true,
+  bank_account_holder: "HolzDirekt GmbH",
+  bank_iban: "DE89370400440532013000",
 };
 
 describe("toPaymentOptions", () => {
@@ -59,8 +70,10 @@ describe("toPaymentOptions", () => {
   });
 
   it("shows a fully configured bank transfer", () => {
+    // Deposit is disabled here so the test isolates the transfer option.
     const row: PaymentSettingsRow = {
       ...EMPTY,
+      deposit_enabled: false,
       bank_transfer_enabled: true,
       bank_account_holder: "HolzDirekt GmbH",
       bank_iban: "DE89370400440532013000",
@@ -89,6 +102,7 @@ describe("toPaymentOptions", () => {
   it("orders bank transfer before card before crypto", () => {
     const row: PaymentSettingsRow = {
       ...EMPTY,
+      deposit_enabled: false,
       bank_transfer_enabled: true,
       bank_account_holder: "HolzDirekt GmbH",
       bank_iban: "DE89370400440532013000",
@@ -142,6 +156,30 @@ describe("isPlaceholderBankData", () => {
         bankName: null,
       }),
     ).toBe(true);
+  });
+});
+
+describe("deposit option", () => {
+  it("offers the deposit alongside a real bank account", () => {
+    const options = toPaymentOptions(BANK);
+    expect(options.map((option) => option.method)).toContain("deposit");
+    const deposit = options.find((option) => option.method === "deposit");
+    expect(deposit).toMatchObject({ method: "deposit", percent: 30, minCents: 1_000_000, iban: "DE89370400440532013000" });
+  });
+
+  it("hides the deposit when the bank account is the seeded placeholder", () => {
+    const options = toPaymentOptions({ ...EMPTY, bank_transfer_enabled: true, bank_account_holder: PLACEHOLDER_ACCOUNT_HOLDER, bank_iban: PLACEHOLDER_IBAN });
+    expect(options.map((option) => option.method)).not.toContain("deposit");
+  });
+
+  it("hides the deposit when the bank transfer is disabled", () => {
+    const options = toPaymentOptions({ ...BANK, bank_transfer_enabled: false });
+    expect(options.map((option) => option.method)).toEqual([]);
+  });
+
+  it("hides the deposit when deposit is disabled in settings", () => {
+    const options = toPaymentOptions({ ...BANK, deposit_enabled: false });
+    expect(options.map((option) => option.method)).not.toContain("deposit");
   });
 });
 

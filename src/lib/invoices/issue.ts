@@ -136,6 +136,14 @@ export async function issueInvoiceForOrder(
   const totalCents = order.total_cents + extraSubtotal;
   const netCents = totalCents - taxCents;
 
+  // The customer may have paid a deposit (Anzahlung) at checkout; the invoice
+  // then shows how much is already due and what remains.
+  const depositCents = Number(order.deposit_cents ?? 0);
+  const depositPercent =
+    depositCents > 0 && Number(order.total_cents) > 0
+      ? Math.round((depositCents / Number(order.total_cents)) * 100)
+      : 0;
+
   const baseSnapshot = {
     issuedAt: issuedAt.toISOString(),
     issueDate: issuedAt.toLocaleDateString("de-DE"),
@@ -171,6 +179,8 @@ export async function issueInvoiceForOrder(
       shippingCents: order.shipping_cents,
       taxCents,
       totalCents,
+      depositCents,
+      depositPercent,
     },
     promotionCode: order.promotion_code,
     taxRate,
@@ -239,6 +249,8 @@ export async function issueInvoiceForOrder(
 export async function issueStandaloneInvoice(
   customer: StandaloneCustomer,
   lines: StandaloneLine[],
+  /** Optional deposit: the customer pays this percentage up front. */
+  deposit?: { percent: number } | null,
 ) {
   const supabase = getMigrationAwareServiceSupabase();
   if (!customer.name.trim()) throw new Error("Kundenname fehlt.");
@@ -306,6 +318,8 @@ export async function issueStandaloneInvoice(
   const totalCents = subtotalCents;
   const netCents = totalCents - taxCents;
   const taxRate = snapshotItems[0]?.taxRate ?? 19;
+  const depositCents = deposit ? Math.round((totalCents * deposit.percent) / 100) : 0;
+  const depositPercent = deposit ? deposit.percent : 0;
 
   const baseSnapshot = {
     issuedAt: issuedAt.toISOString(),
@@ -343,6 +357,8 @@ export async function issueStandaloneInvoice(
       shippingCents: 0,
       taxCents,
       totalCents,
+      depositCents,
+      depositPercent,
     },
     promotionCode: null,
     taxRate,

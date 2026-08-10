@@ -94,6 +94,48 @@ export default async function PaymentSettingsAdminPage() {
           </CardContent>
         </Card>
 
+        {/* Acompte (Anzahlung) */}
+        <Card>
+          <CardContent className="space-y-4 pt-6">
+            <label className="text-text flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                name="deposit_enabled"
+                defaultChecked={settings?.deposit_enabled ?? true}
+              />
+              Proposer l&apos;acompte (Anzahlung)
+            </label>
+            <p className="text-muted text-sm">
+              Au-dessus du seuil, le client paie un pourcentage de la somme par virement et le reste
+              après livraison. L&apos;acompte apparaît à la caisse, sur la page de confirmation, dans
+              l&apos;e-mail et sur la facture. Il exige un virement activé avec un vrai compte bancaire ;
+              désactivé, il disparaît de la caisse.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Montant minimum (€)" hint="défaut 10 000 — en dessous, pas d'acompte à la caisse">
+                <input
+                  name="deposit_min"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={((settings?.deposit_min_cents ?? 1_000_000) / 100).toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}
+                  className={fieldClass}
+                />
+              </Field>
+              <Field label="Pourcentage de l'acompte (%)" hint="défaut 30">
+                <input
+                  name="deposit_percent"
+                  type="number"
+                  min="1"
+                  max="100"
+                  defaultValue={settings?.deposit_percent ?? 30}
+                  className={fieldClass}
+                />
+              </Field>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Carte */}
         <Card>
           <CardContent className="space-y-4 pt-6">

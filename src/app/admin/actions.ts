@@ -19,6 +19,10 @@ import {
   trackingUrl,
   type OrderStatus,
 } from "@/lib/orders/status";
+import {
+  PLACEHOLDER_ACCOUNT_HOLDER,
+  PLACEHOLDER_IBAN,
+} from "@/lib/payments/config";
 
 const optionalText = z.string().trim().transform((value) => value || null);
 const idSchema = z.string().uuid();
@@ -343,6 +347,11 @@ export async function savePaymentSettings(formData: FormData) {
   const cryptoEnabled = formData.get("crypto_enabled") === "on";
   const cardEnabled = formData.get("card_enabled") === "on";
 
+  const depositEnabled = formData.get("deposit_enabled") === "on";
+  const depositMinRaw = String(formData.get("deposit_min") ?? "10000").trim().replace(",", ".");
+  const depositMinCents = Math.round((Number(depositMinRaw) || 0) * 100);
+  const depositPercent = z.coerce.number().int().min(1).max(100).parse(formData.get("deposit_percent") ?? "30");
+
   // A method cannot be switched on without what it needs to take a payment,
   // otherwise the checkout would offer a dead end.
   if (bankEnabled && (!iban || !text.bank_account_holder)) {
@@ -353,6 +362,19 @@ export async function savePaymentSettings(formData: FormData) {
   }
   if (cryptoEnabled && (!text.crypto_provider || currencies.length === 0)) {
     throw new Error("Le paiement en crypto nécessite un prestataire et au moins une devise.");
+  }
+  // The deposit is settled by transfer and the customer pays it now, so it
+  // needs the bank transfer switched on with a real account — the seeded
+  // placeholder must never be shown as a destination for a due payment.
+  if (
+    depositEnabled &&
+    (!bankEnabled ||
+      !iban ||
+      iban === PLACEHOLDER_IBAN ||
+      !text.bank_account_holder ||
+      text.bank_account_holder === PLACEHOLDER_ACCOUNT_HOLDER)
+  ) {
+    throw new Error("L'acompte nécessite un virement activé avec un vrai compte bancaire (pas les coordonnées provisoires).");
   }
 
   const supabase = await getMigrationAwareServerSupabase();
@@ -365,6 +387,9 @@ export async function savePaymentSettings(formData: FormData) {
       bank_transfer_enabled: bankEnabled,
       crypto_enabled: cryptoEnabled,
       card_enabled: cardEnabled,
+      deposit_enabled: depositEnabled,
+      deposit_min_cents: depositMinCents,
+      deposit_percent: depositPercent,
       updated_by: actor.userId,
     })
     .eq("id", 1);
@@ -579,6 +604,12 @@ export async function issueStandaloneInvoiceAction(formData: FormData) {
     city: formData.get("sa_customer_city"),
   });
   const lines = readStandaloneLines(formData);
+  const depositEnabled = formData.get("sa_deposit_enabled") === "on";
+  // A German decimal comma is what an admin types into a percent field.
+  const depositPercentRaw = String(formData.get("sa_deposit_percent") ?? "30").trim().replace(",", ".") || "30";
+  const depositPercent = depositEnabled
+    ? z.coerce.number().int().min(1).max(100).parse(depositPercentRaw)
+    : null;
   const invoice = await issueStandaloneInvoice(
     {
       name: customer.name,
@@ -589,6 +620,7 @@ export async function issueStandaloneInvoiceAction(formData: FormData) {
       city: customer.city || null,
     },
     lines.map((line) => ({ name: line.name, quantity: line.quantity, unitPriceCents: Math.round(line.price * 100), taxRatePct: line.taxRate, createProduct: line.site })),
+    depositPercent ? { percent: depositPercent } : null,
   );
   await auditAdminAction({
     ...actor,
@@ -596,7 +628,7 @@ export async function issueStandaloneInvoiceAction(formData: FormData) {
     action: "invoice.issue_standalone",
     entity: "invoice",
     entityId: invoice.id,
-    metadata: { invoice_number: invoice.invoiceNumber, lines: lines.length, created_products: invoice.createdProducts.length },
+    metadata: { invoice_number: invoice.invoiceNumber, lines: lines.length, created_products: invoice.createdProducts.length, deposit_percent: depositPercent },
   });
   revalidatePath("/admin/rechnungen");
 }

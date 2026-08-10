@@ -53,7 +53,7 @@ const addressSchema = z.object({
 export const placeOrderSchema = z.object({
   items: z.array(lineSchema).min(1),
   address: addressSchema,
-  paymentMethod: z.enum(["bank_transfer", "crypto", "card"]),
+  paymentMethod: z.enum(["bank_transfer", "crypto", "card", "deposit"]),
   promotionCode: z.string().trim().max(64).nullable().optional(),
   cartSessionToken: z.string().min(24).max(200).nullable().optional(),
 });
@@ -68,6 +68,10 @@ export interface PlacedOrder {
   discountCents: number;
   paymentMethod: PaymentMethod;
   paymentReference: string | null;
+  /** Deposit amounts, null when the order is not paid by Anzahlung. */
+  depositCents: number | null;
+  remainingCents: number | null;
+  depositPercent: number | null;
 }
 
 /** `HK-2026-000123`: sortable, human-readable, unique per row. */
@@ -192,6 +196,24 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
   // Prices already include 19 % VAT, so the tax is the fraction inside the gross.
   const taxCents = Math.round(totalCents * (0.19 / 1.19));
 
+  // Deposit: the customer pays a percentage up front by transfer and the rest
+  // later. The option only exists when the bank account is real, and both the
+  // threshold and the percentage are enforced here again — never trusted from
+  // the browser.
+  let deposit: { percent: number; amountCents: number; remainingCents: number } | null = null;
+  if (input.paymentMethod === "deposit") {
+    if (!settings?.deposit_enabled) {
+      throw new OrderError("Die Anzahlung ist nicht verfügbar.", 409);
+    }
+    if (totalCents < (settings.deposit_min_cents ?? 0)) {
+      throw new OrderError("Für diese Bestellsumme ist keine Anzahlung möglich.", 409);
+    }
+    const percent = settings.deposit_percent ?? 30;
+    const amountCents = Math.round((totalCents * percent) / 100);
+    if (amountCents <= 0) throw new OrderError("Anzahlungsbetrag ungültig.", 409);
+    deposit = { percent, amountCents, remainingCents: totalCents - amountCents };
+  }
+
   const supabase = getMigrationAwareServiceSupabase();
 
   // A gapless sequence would need a counter table; the row count is enough for
@@ -215,16 +237,16 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
     phone: input.address.phone,
   };
 
-  const reference =
-    input.paymentMethod === "bank_transfer"
-      ? paymentReference(settings?.bank_reference_prefix ?? null, number)
-      : null;
+  const byTransfer = input.paymentMethod === "bank_transfer" || input.paymentMethod === "deposit";
+  const reference = byTransfer
+    ? paymentReference(settings?.bank_reference_prefix ?? null, number)
+    : null;
 
   // Only a real account goes into the confirmation e-mail: the seeded
   // placeholder must never be mailed to a customer (the e-mail then says the
   // details follow separately).
   const bankForEmail =
-    input.paymentMethod === "bank_transfer" && settings?.bank_iban && settings?.bank_account_holder
+    byTransfer && settings?.bank_iban && settings?.bank_account_holder
       ? {
           accountHolder: settings.bank_account_holder,
           iban: settings.bank_iban,
@@ -253,6 +275,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
       payment_status: "unpaid",
       payment_method: input.paymentMethod,
       payment_reference: reference,
+      deposit_cents: deposit?.amountCents ?? 0,
       subtotal_cents: subtotalCents,
       discount_cents: promotion.discountCents,
       promotion_code: promotion.code,
@@ -325,6 +348,9 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
       paymentLabel: PAYMENT_LABEL[input.paymentMethod],
       paymentReference: reference,
       bank: mailBank,
+      deposit: deposit
+        ? { percent: deposit.percent, amountCents: deposit.amountCents, remainingCents: deposit.remainingCents }
+        : null,
       address: {
         street: input.address.street,
         houseNumber: input.address.houseNumber,
@@ -353,5 +379,8 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
     discountCents: promotion.discountCents,
     paymentMethod: input.paymentMethod,
     paymentReference: reference,
+    depositCents: deposit?.amountCents ?? null,
+    remainingCents: deposit?.remainingCents ?? null,
+    depositPercent: deposit?.percent ?? null,
   };
 }

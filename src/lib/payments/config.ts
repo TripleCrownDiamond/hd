@@ -7,7 +7,7 @@
  * only where a payment is actually created — never sent to the browser.
  */
 
-export type PaymentMethod = "bank_transfer" | "crypto" | "card";
+export type PaymentMethod = "bank_transfer" | "crypto" | "card" | "deposit";
 
 export type CryptoProvider = "btcpay" | "coinbase" | "bitpay";
 export type CardProvider = "stripe" | "mollie" | "adyen";
@@ -28,6 +28,16 @@ export interface PaymentSettingsRow {
   card_provider: CardProvider | null;
   card_publishable_key: string | null;
   card_note: string | null;
+  /**
+   * Deposit (Anzahlung): the customer pays a percentage of the total up front
+   * by transfer and the rest later. Optional because a database that has not
+   * yet run 20260810000018_deposit_payment.sql returns rows without them.
+   */
+  deposit_enabled?: boolean;
+  /** Orders below this total (cents) cannot use the deposit. Default 10 000 €. */
+  deposit_min_cents?: number;
+  /** Percentage of the total paid up front. Default 30. */
+  deposit_percent?: number;
 }
 
 export interface BankTransferOption {
@@ -52,7 +62,24 @@ export interface CardOption {
   note: string | null;
 }
 
-export type PaymentOption = BankTransferOption | CryptoOption | CardOption;
+export interface DepositOption {
+  method: "deposit";
+  /** Percentage of the total paid up front. */
+  percent: number;
+  /** Orders below this total (cents) are not offered the deposit. */
+  minCents: number;
+  // The deposit is settled by transfer, so it carries the bank destination.
+  accountHolder: string;
+  iban: string;
+  bic: string | null;
+  bankName: string | null;
+}
+
+export type PaymentOption =
+  | BankTransferOption
+  | CryptoOption
+  | CardOption
+  | DepositOption;
 
 /**
  * The seeded placeholder account.
@@ -77,6 +104,7 @@ export const PAYMENT_LABEL: Record<PaymentMethod, string> = {
   bank_transfer: "Überweisung",
   crypto: "Kryptowährung",
   card: "Kreditkarte",
+  deposit: "Anzahlung",
 };
 
 /**
@@ -92,13 +120,30 @@ export function toPaymentOptions(row: PaymentSettingsRow | null): PaymentOption[
   if (!row) return [];
   const options: PaymentOption[] = [];
 
+  let bank: BankTransferOption | null = null;
   if (row.bank_transfer_enabled && row.bank_iban && row.bank_account_holder) {
-    options.push({
+    bank = {
       method: "bank_transfer",
       accountHolder: row.bank_account_holder,
       iban: row.bank_iban,
       bic: row.bank_bic,
       bankName: row.bank_name,
+    };
+    options.push(bank);
+  }
+
+  // Deposit is settled by transfer, so it only exists alongside a real bank
+  // account — never with the seeded placeholder, whose IBAN must not reach a
+  // customer who is being asked to pay now.
+  if (row.deposit_enabled && bank && !isPlaceholderBankData(bank)) {
+    options.push({
+      method: "deposit",
+      percent: row.deposit_percent ?? 30,
+      minCents: row.deposit_min_cents ?? 1_000_000,
+      accountHolder: bank.accountHolder,
+      iban: bank.iban,
+      bic: bank.bic,
+      bankName: bank.bankName,
     });
   }
 

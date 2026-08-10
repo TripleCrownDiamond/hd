@@ -16,7 +16,8 @@ export async function readPaymentSettings(): Promise<PaymentSettingsRow | null> 
     .select(
       "bank_transfer_enabled,bank_account_holder,bank_iban,bank_bic,bank_name,bank_reference_prefix," +
         "crypto_enabled,crypto_provider,crypto_provider_url,crypto_currencies,crypto_note," +
-        "card_enabled,card_provider,card_publishable_key,card_note",
+        "card_enabled,card_provider,card_publishable_key,card_note," +
+        "deposit_enabled,deposit_min_cents,deposit_percent",
     )
     .eq("id", 1)
     .maybeSingle();

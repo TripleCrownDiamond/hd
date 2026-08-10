@@ -31,9 +31,20 @@ const money = (cents: number) =>
  * the yard. Lines can be picked from the catalogue (name and price prefill) or
  * typed freehand, including a fully custom product that does not exist in the
  * database. Marking a line "auch im Shop" publishes it in the catalogue too.
+ * An optional deposit (Anzahlung) splits the total into what is due now and
+ * the rest.
  */
-export function StandaloneInvoiceForm({ products }: { products: StandaloneProductOption[] }) {
+export function StandaloneInvoiceForm({
+  products,
+  depositDefaultPercent = 30,
+}: {
+  products: StandaloneProductOption[];
+  /** The deposit percentage configured in /admin/zahlungen, prefilled. */
+  depositDefaultPercent?: number;
+}) {
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
+  const [depositEnabled, setDepositEnabled] = useState(false);
+  const [depositPercent, setDepositPercent] = useState(String(depositDefaultPercent));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
@@ -67,6 +78,8 @@ export function StandaloneInvoiceForm({ products }: { products: StandaloneProduc
       formData.set(`sa_site_${index}`, row.alsoToSite ? "on" : "");
     }
     formData.set("sa_line_count", String(filled.length));
+    formData.set("sa_deposit_enabled", depositEnabled ? "on" : "");
+    formData.set("sa_deposit_percent", depositPercent.trim() || "30");
     startTransition(async () => {
       try {
         setError(null);
@@ -154,9 +167,53 @@ export function StandaloneInvoiceForm({ products }: { products: StandaloneProduc
         </div>
       </div>
 
+      <div className="rounded-lg border p-3">
+        <label className="text-text flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            name="sa_deposit_enabled"
+            checked={depositEnabled}
+            onChange={(event) => setDepositEnabled(event.target.checked)}
+            className="size-4 accent-[var(--color-brand)]"
+          />
+          Acompte (Anzahlung) — le client paie un pourcentage de la facture maintenant
+        </label>
+        {depositEnabled && (
+          <div className="mt-3 grid gap-2 sm:max-w-xs">
+            <Field label="Pourcentage de l'acompte (%)">
+              <input
+                name="sa_deposit_percent"
+                value={depositPercent}
+                onChange={(event) => setDepositPercent(event.target.value)}
+                inputMode="numeric"
+                className={fieldClass}
+              />
+            </Field>
+          </div>
+        )}
+      </div>
+
       <div className="text-sm">
-        <span className="text-muted">Total facture : </span>
-        <strong className="text-text font-mono">{money(grandTotal)}</strong>
+        <div>
+          <span className="text-muted">Total facture : </span>
+          <strong className="text-text font-mono">{money(grandTotal)}</strong>
+        </div>
+        {depositEnabled && (() => {
+          const percent = Number(depositPercent.replace(",", ".")) || 0;
+          const depositCents = Math.round((grandTotal * percent) / 100);
+          return (
+            <>
+              <div>
+                <span className="text-muted">Acompte ({percent} %) : </span>
+                <strong className="text-text font-mono">{money(depositCents)}</strong>
+              </div>
+              <div>
+                <span className="text-muted">Restant : </span>
+                <strong className="text-text font-mono">{money(grandTotal - depositCents)}</strong>
+              </div>
+            </>
+          );
+        })()}
       </div>
 
       {error ? <p className="text-red-600 text-sm" role="alert">{error}</p> : null}
