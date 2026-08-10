@@ -280,17 +280,30 @@ export async function deleteReview(formData: FormData) {
   revalidatePath("/admin/bewertungen"); revalidatePath("/", "layout");
 }
 
-const settingsFields = ["company_name","legal_form","street","postal_code","city","country_code","phone","phone_secondary","email","support_email","vat_id","tax_number","commercial_register","register_court","managing_director","social_instagram","social_facebook","social_linkedin","social_youtube","logo_url","invoice_prefix","invoice_footer","chatbot_name","support_hours"] as const;
+const settingsFields = ["company_name","legal_form","street","postal_code","city","country_code","phone","phone_secondary","email","support_email","vat_id","tax_number","commercial_register","register_court","managing_director","social_instagram","social_facebook","social_tiktok","social_linkedin","social_youtube","logo_url","invoice_prefix","invoice_footer","chatbot_name","support_hours"] as const;
+
+/** Columns a database might not have yet, keyed by the migration that adds them. */
+const OPTIONAL_SETTINGS_COLUMNS = ["social_tiktok"] as const;
 
 export async function saveSiteSettings(formData: FormData) {
   const actor = await requireAdminAccess(["admin"]);
   const values = Object.fromEntries(settingsFields.map((field) => [field, optionalText.parse(String(formData.get(field) ?? ""))]));
   const supabase = await getMigrationAwareServerSupabase();
-  const { error } = await supabase.from("site_settings").update({ ...values,
+  const patch = { ...values,
     newsletter_enabled: formData.get("newsletter_enabled") === "on", chatbot_enabled: formData.get("chatbot_enabled") === "on", cart_recovery_enabled: formData.get("cart_recovery_enabled") === "on",
     invoice_payment_terms_days: z.coerce.number().int().min(0).max(365).parse(formData.get("invoice_payment_terms_days")), invoice_trigger: z.enum(["manual","order","payment","shipment"]).parse(formData.get("invoice_trigger")),
     cart_recovery_first_delay_minutes: z.coerce.number().int().min(30).max(10080).parse(formData.get("cart_recovery_first_delay_minutes")), cart_recovery_second_delay_minutes: z.coerce.number().int().min(60).max(20160).parse(formData.get("cart_recovery_second_delay_minutes")), cart_recovery_max_reminders: z.coerce.number().int().min(1).max(3).parse(formData.get("cart_recovery_max_reminders")),
-    updated_by: actor.userId }).eq("id", 1);
+    updated_by: actor.userId };
+
+  let { error } = await supabase.from("site_settings").update(patch).eq("id", 1);
+  // A column from a migration this database has not run turns the whole save
+  // into a 42703 and loses every other edit on the form. Drop the optional
+  // ones and save the rest rather than making the admin retype it.
+  if (error && (error as { code?: string }).code === "42703") {
+    const reduced = { ...patch };
+    for (const column of OPTIONAL_SETTINGS_COLUMNS) delete (reduced as Record<string, unknown>)[column];
+    ({ error } = await supabase.from("site_settings").update(reduced).eq("id", 1));
+  }
   if (error) throw new Error("Einstellungen konnten nicht gespeichert werden.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "settings.update", entity: "site_settings", entityId: "1" });
   // Legal pages read the company details through the shortcode cache; without

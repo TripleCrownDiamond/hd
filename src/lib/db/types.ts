@@ -61,6 +61,8 @@ export interface SiteSettingsRow {
   vat_id: string | null; tax_number: string | null; commercial_register: string | null;
   register_court: string | null; managing_director: string | null; social_instagram: string | null;
   social_facebook: string | null; social_linkedin: string | null; social_youtube: string | null;
+  /** Optional: added by 20260810000015_site_settings_tiktok.sql. */
+  social_tiktok?: string | null;
   newsletter_enabled: boolean; logo_url: string | null; invoice_prefix: string;
   invoice_footer: string | null; invoice_payment_terms_days: number;
   invoice_trigger: "manual" | "order" | "payment" | "shipment";

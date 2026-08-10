@@ -17,9 +17,10 @@ export async function getCompany(): Promise<CompanyProfile> {
   try {
     const { data } = await getMigrationAwarePublicSupabase()
       .from("site_settings")
-      .select(
-        "company_name,legal_form,street,postal_code,city,country_code,phone,email,support_email,vat_id,tax_number,commercial_register,register_court,managing_director",
-      )
+      // `*` rather than a column list: `social_tiktok` arrives with a migration
+      // that a given database may not have run yet, and naming a missing column
+      // makes PostgREST reject the whole read.
+      .select("*")
       .eq("id", 1)
       .maybeSingle();
     settings = data as Partial<SiteSettingsRow> | null;
@@ -49,5 +50,12 @@ export async function getCompany(): Promise<CompanyProfile> {
       COMPANY.commercialRegister,
     registerCourt: pick(settings?.register_court, COMPANY.registerCourt) ?? COMPANY.registerCourt,
     managingDirector: pick(settings?.managing_director, COMPANY.managingDirector),
+    social: {
+      facebook: pick(settings?.social_facebook, COMPANY.social.facebook),
+      instagram: pick(settings?.social_instagram, COMPANY.social.instagram),
+      tiktok: pick(settings?.social_tiktok, COMPANY.social.tiktok),
+      linkedin: pick(settings?.social_linkedin, COMPANY.social.linkedin),
+      youtube: pick(settings?.social_youtube, COMPANY.social.youtube),
+    },
   };
 }

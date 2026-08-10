@@ -8,7 +8,7 @@ const fields = [
   ["company_name","Firmenname"],["legal_form","Rechtsform"],["street","Straße und Hausnummer"],["postal_code","PLZ"],["city","Ort"],["country_code","Ländercode"],
   ["phone","Telefon"],["phone_secondary","Weiteres Telefon"],["email","E-Mail"],["support_email","Support-E-Mail"],
   ["vat_id","USt-IdNr."],["tax_number","Steuernummer"],["commercial_register","Handelsregisternummer"],["register_court","Registergericht"],["managing_director","Vertretungsberechtigte Person"],
-  ["social_instagram","Instagram-URL"],["social_facebook","Facebook-URL"],["social_linkedin","LinkedIn-URL"],["social_youtube","YouTube-URL"],
+  ["social_facebook","Facebook-URL"],["social_tiktok","TikTok-URL"],["social_instagram","Instagram-URL"],["social_linkedin","LinkedIn-URL"],["social_youtube","YouTube-URL"],
   ["logo_url","Logo-URL (optional)"],["invoice_prefix","Rechnungspräfix"],["invoice_footer","Rechnungsfußzeile"],["chatbot_name","Name des Assistenten"],["support_hours","Support-Zeiten"],
 ] as const;
 

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
 import { FooterNewsletter } from "@/components/layout/footer-newsletter";
 import { Logo } from "@/components/layout/logo";
+import { TiktokIcon } from "@/components/layout/tiktok-icon";
 import { BRAND_NAME } from "@/lib/brand";
 import { getCompany } from "@/lib/company-server";
 import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
@@ -78,8 +79,11 @@ export async function Footer() {
     company.managingDirector ? `Geschäftsführung: ${company.managingDirector}` : null,
   ].filter((detail): detail is string => Boolean(detail));
   const socials = [
-    [settings?.social_instagram, "Instagram", Instagram], [settings?.social_facebook, "Facebook", Facebook],
-    [settings?.social_linkedin, "LinkedIn", Linkedin], [settings?.social_youtube, "YouTube", Youtube],
+    [company.social.facebook, "Facebook", Facebook],
+    [company.social.tiktok, "TikTok", TiktokIcon],
+    [company.social.instagram, "Instagram", Instagram],
+    [company.social.linkedin, "LinkedIn", Linkedin],
+    [company.social.youtube, "YouTube", Youtube],
   ] as const;
   return (
     <footer className="border-t border-border bg-brand text-white" role="contentinfo">

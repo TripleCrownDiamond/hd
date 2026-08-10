@@ -31,14 +31,21 @@ export interface CompanyProfile {
   commercialRegister: string;
   vatId: string | null;
   taxNumber: string | null;
+  social: {
+    facebook: string | null;
+    instagram: string | null;
+    tiktok: string | null;
+    linkedin: string | null;
+    youtube: string | null;
+  };
 }
 
 export const COMPANY: CompanyProfile = {
   name: "Holz Direkt GmbH",
   legalForm: "GmbH",
-  street: null,
-  postalCode: null,
-  city: null,
+  street: "Bergweg 24",
+  postalCode: "48485",
+  city: "Neuenkirchen",
   state: "Nordrhein-Westfalen",
   countryCode: "DE",
   country: "Deutschland",
@@ -50,6 +57,13 @@ export const COMPANY: CompanyProfile = {
   commercialRegister: "HRB 3447",
   vatId: null,
   taxNumber: null,
+  social: {
+    facebook: "https://www.facebook.com/profile.php?id=61592760945569",
+    instagram: null,
+    tiktok: "https://www.tiktok.com/@holz_direkt",
+    linkedin: null,
+    youtube: null,
+  },
 };
 
 /** The trading name shown to customers. The GmbH is the contracting party. */
