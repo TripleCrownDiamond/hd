@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { getMigrationAwareServiceSupabase } from "@/lib/db/server";
 import { sendEmail } from "@/lib/notifications/email";
+import { invoiceEmail } from "@/lib/notifications/templates";
 import { generateInvoicePdf } from "./pdf";
 
 /** A line the admin adds to an invoice that was not part of the original order. */
@@ -180,11 +181,18 @@ export async function issueInvoiceForOrder(
   // logged and the PDF stays downloadable from the admin.
   const customerEmail = order.customer_email;
   if (customerEmail) {
+    const cover = invoiceEmail({
+      invoiceNumber: invoice.invoice_number,
+      orderNumber: order.order_number,
+      customerName: order.customer_name,
+      companyName: settings.company_name,
+      totalCents: totalCents,
+    });
     const email = await sendEmail({
       to: customerEmail,
-      subject: `Ihre Rechnung ${invoice.invoice_number}`,
-      text: `Guten Tag,\n\nanbei erhalten Sie die Rechnung ${invoice.invoice_number} zu Ihrer Bestellung ${order.order_number}.\n\nMit freundlichen Grüßen\n${settings.company_name}`,
-      html: `<p>Guten Tag,</p><p>anbei erhalten Sie die Rechnung <strong>${invoice.invoice_number}</strong> zu Ihrer Bestellung ${order.order_number}.</p><p>Mit freundlichen Grüßen<br/>${settings.company_name}</p>`,
+      subject: cover.subject,
+      text: cover.text,
+      html: cover.html,
       attachments: [
         {
           filename: `${invoice.invoice_number}.pdf`,
