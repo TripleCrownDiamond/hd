@@ -49,7 +49,7 @@ export const COMPANY: CompanyProfile = {
   state: "Nordrhein-Westfalen",
   countryCode: "DE",
   country: "Deutschland",
-  email: null,
+  email: "kontakt@holzdirekt.store",
   supportEmail: null,
   phone: "+49 1521 6824424",
   managingDirector: null,
