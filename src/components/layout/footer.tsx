@@ -3,11 +3,10 @@ import Image from "next/image";
 import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
 import { FooterNewsletter } from "@/components/layout/footer-newsletter";
 import { Logo } from "@/components/layout/logo";
-import { TiktokIcon } from "@/components/layout/tiktok-icon";
+import { TiktokIcon } from "@/components/layout/brand-icons";
 import { BRAND_NAME } from "@/lib/brand";
 import { getCompany } from "@/lib/company-server";
-import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
-import type { SiteSettingsRow } from "@/lib/db/types";
+import { getSiteSettings } from "@/lib/settings-server";
 
 const footerSections = [
   {
@@ -55,8 +54,7 @@ const footerSections = [
 ];
 
 export async function Footer() {
-  const { data } = await getMigrationAwarePublicSupabase().from("site_settings").select("*").eq("id", 1).maybeSingle();
-  const settings = data as SiteSettingsRow | null;
+  const settings = await getSiteSettings();
   // Same resolution the legal pages use — an admin edit wins, otherwise the
   // details the company has confirmed in code. Without this the footer stayed
   // blank on a database whose settings row has never been filled in.

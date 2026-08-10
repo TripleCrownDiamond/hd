@@ -89,6 +89,25 @@ export function orGap(value: string | null | undefined): string {
   return value && value.trim() ? value : "— noch zu ergänzen —";
 }
 
+/**
+ * A `wa.me` link for the company phone, or null if there is no number.
+ *
+ * wa.me wants digits only in full international form — no `+`, spaces or
+ * dashes — and silently shows "phone number shared via url is invalid" for
+ * anything else. A number that is not international (no leading `+` or `00`)
+ * is refused rather than guessed at, since prefixing the wrong country code
+ * sends the customer to a stranger.
+ */
+export function whatsappHref(company: CompanyProfile, message?: string): string | null {
+  const raw = company.phone?.trim();
+  if (!raw) return null;
+  if (!raw.startsWith("+") && !raw.startsWith("00")) return null;
+  const digits = raw.replace(/\D/g, "").replace(/^00/, "");
+  if (digits.length < 8) return null;
+  const query = message ? `?text=${encodeURIComponent(message)}` : "";
+  return `https://wa.me/${digits}${query}`;
+}
+
 /** `Straße 1, 48431 Rheine` with whatever parts exist. */
 export function formatAddressLine(company: CompanyProfile): string {
   const parts = [

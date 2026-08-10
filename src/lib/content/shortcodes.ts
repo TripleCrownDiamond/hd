@@ -18,6 +18,7 @@ import "server-only";
 
 import { COMPANY, orGap, TRADING_NAME } from "@/lib/company";
 import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
+import { getSiteSettings } from "@/lib/settings-server";
 import type { PaymentSettingsRow } from "@/lib/payments/config";
 import type { SiteSettingsRow } from "@/lib/db/types";
 import {
@@ -94,7 +95,8 @@ async function load() {
   if (cache && Date.now() - cache.at < TTL_MS) return cache;
   const supabase = getMigrationAwarePublicSupabase();
   const [settings, payment] = await Promise.all([
-    supabase.from("site_settings").select("*").eq("id", 1).maybeSingle(),
+    // Deduped with the layout, footer and company profile.
+    getSiteSettings(),
     supabase
       .from("payment_settings")
       .select("bank_account_holder,bank_iban,bank_bic,bank_name,bank_reference_prefix")
@@ -102,7 +104,7 @@ async function load() {
       .maybeSingle(),
   ]);
   cache = {
-    settings: (settings.data as SiteSettingsRow | null) ?? null,
+    settings,
     payment: (payment.data as PaymentSettingsRow | null) ?? null,
     at: Date.now(),
   };

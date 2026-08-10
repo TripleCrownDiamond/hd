@@ -9,8 +9,9 @@ import { DeliveryProvider } from "@/lib/shipping/delivery-store";
 import { CartSheet } from "@/components/commerce/cart-sheet";
 import { getMegaMenu } from "@/lib/products/navigation";
 import "./globals.css";
-import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
+import { getSiteSettings } from "@/lib/settings-server";
 import { FloatingChat } from "@/components/chat/floating-chat";
+import { FloatingWhatsApp } from "@/components/layout/floating-whatsapp";
 
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -52,7 +53,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const sections = await getMegaMenu();
-  const { data: shopSettings } = await getMigrationAwarePublicSupabase().from("site_settings").select("chatbot_enabled,chatbot_name").eq("id", 1).maybeSingle();
+  const shopSettings = await getSiteSettings();
 
   return (
     <html
@@ -73,6 +74,8 @@ export default async function RootLayout({
           <Footer />
           <CartSheet />
           {shopSettings?.chatbot_enabled ? <FloatingChat name={shopSettings.chatbot_name ?? undefined} /> : null}
+          {/* Stacks above the chat launcher when both share the corner. */}
+          <FloatingWhatsApp stacked={Boolean(shopSettings?.chatbot_enabled)} />
           </ShortlistProvider>
           </DeliveryProvider>
         </CartProvider>

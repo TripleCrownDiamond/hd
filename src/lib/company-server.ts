@@ -1,7 +1,8 @@
 import "server-only";
 
+import { cache } from "react";
 import { COMPANY, type CompanyProfile } from "@/lib/company";
-import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
+import { getSiteSettings } from "@/lib/settings-server";
 import type { SiteSettingsRow } from "@/lib/db/types";
 
 /**
@@ -12,21 +13,10 @@ import type { SiteSettingsRow } from "@/lib/db/types";
  * already knows. A read failure falls back to the code profile rather than
  * taking the legal pages down with it.
  */
-export async function getCompany(): Promise<CompanyProfile> {
-  let settings: Partial<SiteSettingsRow> | null = null;
-  try {
-    const { data } = await getMigrationAwarePublicSupabase()
-      .from("site_settings")
-      // `*` rather than a column list: `social_tiktok` arrives with a migration
-      // that a given database may not have run yet, and naming a missing column
-      // makes PostgREST reject the whole read.
-      .select("*")
-      .eq("id", 1)
-      .maybeSingle();
-    settings = data as Partial<SiteSettingsRow> | null;
-  } catch {
-    settings = null;
-  }
+export const getCompany = cache(async function getCompany(): Promise<CompanyProfile> {
+  // Shared with the layout, the footer and the shortcode expander, so the row
+  // is fetched once per render however many of them ask for it.
+  const settings: Partial<SiteSettingsRow> | null = await getSiteSettings();
 
   const pick = (value: string | null | undefined, fallback: string | null) => {
     const trimmed = typeof value === "string" ? value.trim() : "";
@@ -58,4 +48,4 @@ export async function getCompany(): Promise<CompanyProfile> {
       youtube: pick(settings?.social_youtube, COMPANY.social.youtube),
     },
   };
-}
+});
