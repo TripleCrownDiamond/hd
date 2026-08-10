@@ -151,7 +151,7 @@ export function StoveDetail({ product }: { product: ScrapedProduct }) {
           </ol>
         </nav>
 
-        <div className="grid gap-8 lg:grid-cols-[7fr_5fr] lg:gap-12">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12">
           <div>
             <Card className="overflow-hidden p-0">
               <div className="relative aspect-square bg-surface">
@@ -431,7 +431,7 @@ export function StoveDetail({ product }: { product: ScrapedProduct }) {
 
         <Separator className="my-10" />
 
-        <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <Card>
             <CardContent className="pt-6">
               <h2 className="font-display text-2xl font-semibold text-text">

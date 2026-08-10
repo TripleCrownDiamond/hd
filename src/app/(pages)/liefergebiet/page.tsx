@@ -30,7 +30,7 @@ export default function LiefergebietPage() {
           className="mb-6"
         />
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div>
             <h1 className="font-display text-3xl font-semibold leading-tight text-text md:text-4xl">
               Liefergebiet prüfen

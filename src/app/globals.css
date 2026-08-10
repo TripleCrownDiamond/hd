@@ -284,6 +284,13 @@
   color: var(--color-text);
   font-size: var(--text-sm);
   line-height: 1.7;
+  /*
+   * German legal copy is full of words no phone can fit —
+   * "Barrierefreiheitsstärkungsgesetz", "Umsatzsteuer-Identifikationsnummer" —
+   * plus bare URLs. Without this they set a min-content floor wider than the
+   * screen and push the page sideways.
+   */
+  overflow-wrap: break-word;
 
   & h2 {
     font-family: var(--font-display);
@@ -337,26 +344,52 @@
     font-size: 0.875em;
   }
 
-  /* The Widerrufsformular is a fenced block and must keep its alignment. */
+  /*
+   * The Widerrufsformular is a fenced block and must keep its alignment, so it
+   * cannot wrap — it scrolls instead.
+   *
+   * `max-width` is what makes that work. `overflow-x: auto` alone does nothing
+   * on a box free to grow: the block simply widened to fit its longest line and
+   * took the page with it, stretching a 375px phone to 513px.
+   */
   & pre {
     border: 1px solid var(--color-border);
     background-color: var(--color-elevated);
     border-radius: 0.375rem;
     padding: 1rem;
     margin-bottom: 1rem;
+    max-width: 100%;
     overflow-x: auto;
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     line-height: 1.6;
   }
 
-  /* Tables carry the processor list and the shipping tariffs. */
+  /*
+   * Tables carry the processor list and the shipping tariffs. They stay real
+   * tables; the scrolling is done by the wrapper the Markdown renderer puts
+   * around them (see `markdown-components`). Making the table itself the
+   * scroll container needs `display: block`, which breaks column alignment.
+   */
   & table {
     width: 100%;
     border-collapse: collapse;
+  }
+
+  & .table-scroll {
     margin-bottom: 1rem;
-    display: block;
+    max-width: 100%;
     overflow-x: auto;
+  }
+
+  /*
+   * `anywhere`, not `break-word`: only `anywhere` lowers the intrinsic
+   * min-content size, which is what lets a table shrink to its column instead
+   * of setting the floor for the whole page.
+   */
+  & th,
+  & td {
+    overflow-wrap: anywhere;
   }
 
   & th {

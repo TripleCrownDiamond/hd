@@ -46,7 +46,7 @@ export default async function CmsPage({ params }: { params: Promise<{ slug: stri
           items={[{ label: "Startseite", href: "/" }, { label: title }]}
           className="mb-6"
         />
-        <article className="container-legal border-border bg-surface rounded-xl border p-6 shadow-sm md:p-10">
+        <article className="container-legal border-border bg-surface w-full min-w-0 rounded-xl border p-6 shadow-sm md:p-10">
           {resolved.entry ? (
             <PublishedContent entry={resolved.entry} />
           ) : (

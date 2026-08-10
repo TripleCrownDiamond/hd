@@ -97,7 +97,7 @@ export function TrackingView() {
   const order = result?.ok ? result.order : null;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[360px_1fr] lg:gap-8">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-8">
       <Card className="lg:self-start">
         <CardContent className="pt-6">
           <form onSubmit={submit} className="space-y-4" noValidate>

@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { markdownComponents } from "@/components/content/markdown-components";
 import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
 import { expandShortcodes } from "@/lib/content/shortcodes";
 import type { ContentEntryRow } from "@/lib/db/types";
@@ -22,12 +23,16 @@ export async function PublishedContent({ entry }: { entry: ContentEntryRow }) {
 
   return (
     <div>
-      <h1 className="text-text font-display text-3xl font-semibold">{entry.title}</h1>
+      <h1 className="text-text font-display text-2xl font-semibold break-words sm:text-3xl">
+        {entry.title}
+      </h1>
       {excerpt ? <p className="text-muted mt-2">{excerpt}</p> : null}
       <div className="mt-8">
         {entry.format === "markdown" ? (
           <div className="legal-prose">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {body}
+            </ReactMarkdown>
           </div>
         ) : (
           <iframe

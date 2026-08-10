@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { markdownComponents } from "@/components/content/markdown-components";
 import Link from "next/link";
 import { getPublishedContent, PublishedContent } from "@/components/content/published-content";
 import { expandShortcodes } from "@/lib/content/shortcodes";
@@ -50,10 +51,17 @@ export async function LegalPage({ slug }: { slug: string }) {
         lässt er sich als Entwurf anlegen, bearbeiten und veröffentlichen.
       </div>
 
-      <h1 className="text-text font-display text-3xl font-semibold">{title}</h1>
+      {/* `break-words` + a smaller mobile step: "Allgemeine
+          Geschäftsbedingungen" at 36px is one unbreakable 367px word and was
+          spilling 74px out of a 293px box. */}
+      <h1 className="text-text font-display text-2xl font-semibold break-words sm:text-3xl">
+        {title}
+      </h1>
       {excerpt ? <p className="text-muted mt-2 text-sm">{excerpt}</p> : null}
       <div className="legal-prose mt-8">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+          {body}
+        </ReactMarkdown>
       </div>
     </div>
   );

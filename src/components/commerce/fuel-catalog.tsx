@@ -96,7 +96,7 @@ export async function FuelCatalog({
           className="mb-6"
         />
 
-        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-8">
           <aside aria-label="Filter" className="lg:sticky lg:top-28 lg:self-start">
             {filterGroups.length > 0 && <CatalogFilters groups={filterGroups} />}
           </aside>

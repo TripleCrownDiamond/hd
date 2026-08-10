@@ -360,7 +360,7 @@ export function CheckoutView({ paymentOptions }: { paymentOptions: PaymentOption
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:gap-8">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
       <form
         className="space-y-6"
         noValidate

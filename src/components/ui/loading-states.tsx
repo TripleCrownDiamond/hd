@@ -92,7 +92,7 @@ export function CartPageLoading() {
   return (
     <div aria-busy="true">
       <LoadingStatus label="Warenkorb wird geladen…" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]" aria-hidden="true">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]" aria-hidden="true">
         <div className="space-y-4">
           {Array.from({ length: 2 }, (_, index) => (
             <div key={index} className="border-border bg-surface rounded-xl border p-5">
