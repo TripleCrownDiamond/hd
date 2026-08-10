@@ -236,14 +236,20 @@ async function buildMegaMenu(): Promise<MegaMenuSection[]> {
     { kind: "accessory", label: "Zubehör" },
   ];
 
+  // These have a dedicated catalogue page and stay reachable even while their
+  // first approved products are still in review, so a brand-new category never
+  // vanishes from the menu. The others appear once they carry products.
+  const alwaysVisible = new Set<Kind>(["log", "coal"]);
+
   const remaining = fuelKinds
     .map(({ kind, label }) => ({ kind, label, items: byKind.get(kind) ?? [] }))
-    .filter((entry) => entry.items.length > 0);
+    .filter((entry) => entry.items.length > 0 || alwaysVisible.has(entry.kind));
 
   if (remaining.length > 0) {
+    const first = remaining[0]!;
     sections.push({
       label: "Weitere Brennstoffe",
-      href: "/anzuendholz",
+      href: CATEGORY_ROUTE[first.kind],
       count: remaining.reduce((sum, entry) => sum + entry.items.length, 0),
       columns: [
         {
@@ -259,7 +265,9 @@ async function buildMegaMenu(): Promise<MegaMenuSection[]> {
     });
   }
 
-  return sections.length > 0 ? sections : fallbackSections();
+  // A genuinely empty catalogue must still show the full category list, not a
+  // sparse "Weitere Brennstoffe" section with two zero-count links.
+  return sections.some((section) => section.count > 0) ? sections : fallbackSections();
 }
 
 function powerBand(kw: number | null): string | null {
@@ -300,10 +308,12 @@ function fallbackSections(): MegaMenuSection[] {
           title: "Kategorien",
           links: [
             { label: "Brennholz", href: "/brennholz", count: 0 },
+            { label: "Stammholz & Meterholz", href: "/stammholz", count: 0 },
             { label: "Kaminöfen", href: "/kaminoefen", count: 0 },
             { label: "Anzündholz", href: "/anzuendholz", count: 0 },
             { label: "Holzbriketts", href: "/holzbriketts", count: 0 },
             { label: "Holzpellets", href: "/holzpellets", count: 0 },
+            { label: "Kohle & Grillkohle", href: "/kohle", count: 0 },
             { label: "Zubehör", href: "/zubehoer", count: 0 },
           ],
         },
