@@ -65,12 +65,7 @@ export function WoodProductCard({
           <TreeDeciduous className="text-brand/20 size-20" strokeWidth={1} aria-hidden="true" />
         )}
 
-        <Badge
-          variant="brand"
-          className="absolute top-3 left-3 border border-white/20 shadow-sm"
-        >
-          Lieferantendaten
-        </Badge>
+
 
         <button
           type="button"
@@ -148,9 +143,7 @@ export function WoodProductCard({
             )}
           </div>
           <p className="text-muted mt-0.5 text-xs">
-            {hasPublicPrice
-              ? "inkl. MwSt. · Lieferantenpreis, Versand noch nicht kalkuliert"
-              : "Preis wird nach Prüfung veröffentlicht"}
+            {hasPublicPrice ? "inkl. MwSt., zzgl. Versand" : "Auf Anfrage"}
           </p>
 
           {/* No cart action: these records are still in catalogue review. */}

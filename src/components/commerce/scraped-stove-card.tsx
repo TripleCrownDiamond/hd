@@ -110,12 +110,7 @@ export function ScrapedStoveCard({
             )}
           />
         </button>
-        <Badge
-          variant="brand"
-          className="absolute top-3 left-3 border border-white/20 shadow-sm"
-        >
-          Herstellerdaten
-        </Badge>
+
         {product.technical.energy_class && !isPendingReview ? (
           <Badge
             variant="brand"
@@ -173,7 +168,7 @@ export function ScrapedStoveCard({
           </p>
           <p className="text-muted mt-0.5 text-xs">
             {hasPublicPrice
-              ? "inkl. MwSt. · Herstellerpreis"
+              ? "inkl. MwSt., zzgl. Versand"
               : "Persönliches Angebot für Produkt und Montage"}
           </p>
           <div className="mt-4 flex min-w-0 gap-2">

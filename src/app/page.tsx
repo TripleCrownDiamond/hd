@@ -35,6 +35,8 @@ import { ReviewStars } from "@/components/commerce/review-stars";
 import { getShopReviews, summarise, type Review } from "@/lib/reviews/reviews";
 import { getLatestArticles, type ArticleSummary } from "@/lib/content/articles";
 import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
+import { stammholzProducts, type StammholzProduct } from "@/lib/fixtures";
+import { StammholzCard } from "@/components/commerce/stammholz-card";
 
 export const dynamic = "force-dynamic";
 
@@ -283,8 +285,7 @@ function FeaturedProducts({ woodProducts }: { woodProducts: WoodCatalogProduct[]
               Brennholz im Sortiment
             </h2>
             <p className="text-muted mt-2">
-              Lieferantendaten in Prüfung — Holzart, Länge, Restfeuchte und Menge wie
-              deklariert.
+              Kammergetrocknet, PEFC-zertifiziert — Holzart, Länge, Restfeuchte und Menge wie deklariert.
             </p>
           </div>
           <Button asChild variant="ghost">
@@ -360,6 +361,42 @@ function StoveSection({ stoves }: { stoves: ScrapedProduct[] }) {
             </Button>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+function StammholzSection({ products }: { products: StammholzProduct[] }) {
+  const preview = products.slice(0, 4);
+  if (preview.length === 0) return null;
+  return (
+    <section className="border-border bg-elevated/30 border-t py-16 md:py-24">
+      <div className="container-site">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <Badge variant="default" className="bg-wood/10 text-wood mb-3">
+              Stammholz — Rundholz
+            </Badge>
+            <h2 className="font-display text-text text-3xl font-semibold md:text-4xl">
+              Stammholz per LKW-Ladung
+            </h2>
+            <p className="text-muted mt-2 max-w-xl">
+              PEFC-zertifiziertes Rund- und Stammholz für Sägewerke und Großabnehmer.
+              Menge wählen: Viertel-, Halb- oder Voll-LKW — direkt ab Forststraße.
+            </p>
+          </div>
+          <Button asChild variant="ghost">
+            <Link href="/stammholz">
+              Alle {products.length} ansehen
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        </div>
+        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {preview.map((product) => (
+            <StammholzCard key={product.id} product={product} />
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -756,6 +793,7 @@ export default async function HomePage() {
       <BenefitsStrip />
       <CategoryGrid categories={categories} />
       <FeaturedProducts woodProducts={woodProducts} />
+      <StammholzSection products={stammholzProducts} />
       <StoveSection stoves={stoves} />
       <FuelSection
         title="Holzbriketts"
