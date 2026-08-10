@@ -50,3 +50,7 @@ tsconfig.tsbuildinfo
 # avec la cle service_role dedans.
 *.bak
 .env*.backup
+
+# Local artefacts (screenshots, ad-hoc scripts)
+output/playwright/
+scratchpad/

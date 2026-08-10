@@ -2,6 +2,8 @@ import "server-only";
 
 import nodemailer, { type Transporter } from "nodemailer";
 
+import { COMPANY } from "@/lib/company";
+
 /**
  * Transactional email.
  *
@@ -46,6 +48,19 @@ interface SmtpConfig {
 }
 
 /**
+ * `"Name" <email@example.com>` from a possibly-empty display name.
+ *
+ * Without a name the address is returned bare, so existing setups that only
+ * set the mailbox address keep behaving exactly as before. Quotes are escaped
+ * so a name can never break the header.
+ */
+function formatFrom(name: string | undefined, email: string): string {
+  const trimmed = name?.trim();
+  if (!trimmed) return email;
+  return `"${trimmed.replace(/"/g, "'")}" <${email}>`;
+}
+
+/**
  * SMTP settings from the environment.
  *
  * Port 465 is implicit TLS; 587 starts plaintext and upgrades with STARTTLS.
@@ -65,8 +80,10 @@ function smtpConfig(): SmtpConfig | null {
     secure: port === 465,
     user,
     password,
-    // Most providers reject a From that is not the authenticated mailbox.
-    from: process.env.SMTP_FROM_EMAIL?.trim() || user,
+    // Most providers reject a From that is not the authenticated mailbox —
+    // the address must stay SMTP_FROM_EMAIL, but the display name in front of
+    // it is the shop's, so customers see the company, not "noreply".
+    from: formatFrom(process.env.SMTP_FROM_NAME?.trim() || COMPANY.name, process.env.SMTP_FROM_EMAIL?.trim() || user),
   };
 }
 
@@ -131,8 +148,9 @@ async function sendViaSmtp(config: SmtpConfig, input: SendEmailInput): Promise<E
 
 async function sendViaResend(input: SendEmailInput): Promise<EmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
-  if (!apiKey || !from) return { sent: false, skipped: "not_configured" };
+  const fromEmail = process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !fromEmail) return { sent: false, skipped: "not_configured" };
+  const from = formatFrom(process.env.RESEND_FROM_NAME?.trim() || COMPANY.name, fromEmail);
 
   try {
     const replyTo = input.replyTo ?? process.env.RESEND_REPLY_TO;

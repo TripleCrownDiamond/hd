@@ -5,6 +5,27 @@ import { sendEmail } from "@/lib/notifications/email";
 import { invoiceEmail } from "@/lib/notifications/templates";
 import { generateInvoicePdf } from "./pdf";
 
+/** A standalone invoice has no order; the customer is entered directly. */
+export interface StandaloneCustomer {
+  name: string;
+  email?: string | null;
+  street?: string | null;
+  houseNumber?: string | null;
+  postcode?: string | null;
+  city?: string | null;
+}
+
+/** A line on a standalone invoice, from an existing product or typed freehand. */
+export interface StandaloneLine {
+  name: string;
+  quantity: number;
+  /** Gross (VAT-inclusive) unit price in EUR cents. */
+  unitPriceCents: number;
+  taxRatePct?: number;
+  /** When set, the line's product also becomes a published catalogue product. */
+  createProduct?: boolean;
+}
+
 /** A line the admin adds to an invoice that was not part of the original order. */
 export interface InvoiceExtraItem {
   /** Product name as it appears on the invoice. */
@@ -207,6 +228,169 @@ export async function issueInvoiceForOrder(
   }
 
   return { id: invoice.id as string, invoiceNumber: invoice.invoice_number as string, createdProducts: extraProducts };
+}
+
+/**
+ * Raise an invoice without an order — for a sale concluded by hand, phone or
+ * at the yard. Lines come from existing products (name/price typed by the
+ * admin) or are fully custom. Each line can optionally create its product in
+ * the catalogue, so a custom item sold today can be reordered online later.
+ */
+export async function issueStandaloneInvoice(
+  customer: StandaloneCustomer,
+  lines: StandaloneLine[],
+) {
+  const supabase = getMigrationAwareServiceSupabase();
+  if (!customer.name.trim()) throw new Error("Kundenname fehlt.");
+  const priced = lines.filter((line) => line.unitPriceCents > 0);
+  if (priced.length === 0) throw new Error("Mindestens eine Zeile mit Preis ist erforderlich.");
+
+  const { data: settings } = await supabase
+    .from("site_settings")
+    .select("*")
+    .eq("id", 1)
+    .single();
+  if (!settings) throw new Error("Rechnungsdaten fehlen.");
+  if (!settings.company_name || !settings.street || !settings.postal_code || !settings.city) throw new Error("Die Firmenanschrift muss vor Ausstellung gepflegt sein.");
+  if (!settings.vat_id && !settings.tax_number) throw new Error("USt-IdNr. oder Steuernummer fehlen — bitte in den Einstellungen pflegen, bevor eine Rechnung ausgestellt wird.");
+
+  // Products the admin chose to publish too, created before the invoice (an
+  // invoice without its promised catalogue product is worse than a stray one).
+  const createdProducts: Array<{ name: string; slug: string; priceCents: number; quantity: number }> = [];
+  for (const [index, line] of priced.entries()) {
+    if (!line.createProduct) continue;
+    const slug = makeSlug(line.name, index);
+    const { data: created, error } = await supabase
+      .from("products")
+      .insert({
+        slug,
+        kind: "accessory",
+        model: line.name,
+        subtitle: null,
+        short_description: null,
+        long_description: null,
+        description_authorized: false,
+        price_cents_public: line.unitPriceCents,
+        quote_mode: false,
+        extra: {},
+        is_published: true,
+        review_status: "approved",
+      })
+      .select("id,slug")
+      .single();
+    if (error || !created) throw new Error(`Produkt „${line.name.slice(0, 40)}" konnte nicht angelegt werden.`);
+    createdProducts.push({ name: line.name, slug: created.slug as string, priceCents: line.unitPriceCents, quantity: line.quantity });
+  }
+
+  const issuedAt = new Date();
+  const due = new Date(issuedAt);
+  due.setDate(due.getDate() + Number(settings.invoice_payment_terms_days ?? 14));
+
+  const snapshotItems = priced.map((line) => {
+    const lineTotal = Math.round(line.quantity * line.unitPriceCents);
+    return {
+      name: line.name,
+      variant: null,
+      quantity: line.quantity,
+      unitPriceCents: line.unitPriceCents,
+      discountCents: 0,
+      lineTotalCents: lineTotal,
+      taxRate: line.taxRatePct ?? 19,
+    };
+  });
+  const subtotalCents = snapshotItems.reduce((sum, item) => sum + item.lineTotalCents, 0);
+  const taxCents = snapshotItems.reduce(
+    (sum, item) => sum + Math.round(item.lineTotalCents * (item.taxRate / (100 + item.taxRate))),
+    0,
+  );
+  const totalCents = subtotalCents;
+  const netCents = totalCents - taxCents;
+  const taxRate = snapshotItems[0]?.taxRate ?? 19;
+
+  const baseSnapshot = {
+    issuedAt: issuedAt.toISOString(),
+    issueDate: issuedAt.toLocaleDateString("de-DE"),
+    dueDate: due.toLocaleDateString("de-DE"),
+    // No order reference — the PDF hides the Bestellung line.
+    orderNumber: null,
+    company: {
+      name: settings.company_name,
+      legalForm: settings.legal_form,
+      street: settings.street,
+      postalCode: settings.postal_code,
+      city: settings.city,
+      countryCode: settings.country_code,
+      vatId: settings.vat_id,
+      taxNumber: settings.tax_number,
+      commercialRegister: settings.commercial_register,
+      registerCourt: settings.register_court,
+      managingDirector: settings.managing_director,
+      footer: settings.invoice_footer,
+      logoUrl: settings.logo_url,
+    },
+    customer: {
+      name: customer.name,
+      email: customer.email ?? null,
+      street: customer.street ?? null,
+      houseNumber: customer.houseNumber ?? null,
+      postcode: customer.postcode ?? null,
+      city: customer.city ?? null,
+    },
+    items: snapshotItems,
+    amounts: {
+      subtotalCents,
+      discountCents: 0,
+      shippingCents: 0,
+      taxCents,
+      totalCents,
+    },
+    promotionCode: null,
+    taxRate,
+  };
+
+  const { data: draft, error } = await supabase.rpc("create_invoice_draft", {
+    p_order_id: null,
+    p_kind: "invoice",
+    p_snapshot: baseSnapshot,
+    p_net_cents: netCents,
+    p_tax_cents: taxCents,
+    p_gross_cents: totalCents,
+    p_due_date: due.toISOString().slice(0, 10),
+  });
+  if (error || !draft) throw new Error("Rechnungsnummer konnte nicht vergeben werden.");
+  const invoice = Array.isArray(draft) ? draft[0] : draft;
+
+  const snapshot = { ...baseSnapshot, invoiceNumber: invoice.invoice_number };
+  const bytes = Buffer.from(await generateInvoicePdf(snapshot));
+  const sha256 = createHash("sha256").update(bytes).digest("hex");
+  const path = `${issuedAt.getFullYear()}/${invoice.invoice_number}.pdf`;
+  const { error: uploadError } = await supabase.storage.from("invoices").upload(path, bytes, { contentType: "application/pdf", upsert: false });
+  if (uploadError) throw new Error("Rechnungs-PDF konnte nicht gespeichert werden.");
+  const { error: issueError } = await supabase.from("invoices").update({ status: "issued", snapshot, document_path: path, document_sha256: sha256, issued_at: issuedAt.toISOString() }).eq("id", invoice.id).eq("status", "draft");
+  if (issueError) throw new Error("Rechnung konnte nicht ausgestellt werden.");
+
+  // Best-effort cover mail with the PDF attached, like order invoices.
+  if (customer.email) {
+    const cover = invoiceEmail({
+      invoiceNumber: invoice.invoice_number,
+      orderNumber: null,
+      customerName: customer.name,
+      companyName: settings.company_name,
+      totalCents,
+    });
+    const email = await sendEmail({
+      to: customer.email,
+      subject: cover.subject,
+      text: cover.text,
+      html: cover.html,
+      attachments: [{ filename: `${invoice.invoice_number}.pdf`, content: bytes, contentType: "application/pdf" }],
+    });
+    if (!email.sent) {
+      console.error(`Invoice ${invoice.invoice_number}: PDF e-mail to ${customer.email} failed`, email.error);
+    }
+  }
+
+  return { id: invoice.id as string, invoiceNumber: invoice.invoice_number as string, createdProducts };
 }
 
 /** `Kaminofen X` → `kaminofen-x`; unique within the catalogue via a timestamp + index suffix. */

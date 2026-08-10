@@ -75,8 +75,11 @@ export async function generateInvoicePdf(snapshot: Record<string, any>) {
   draw(`Rechnungsnummer: ${snapshot.invoiceNumber}`, 350, 10, true);
   y -= 14;
   draw(`Rechnungsdatum: ${snapshot.issueDate}`, 350);
-  y -= 14;
-  draw(`Bestellung: ${snapshot.orderNumber}`, 350);
+  // A standalone invoice has no order reference.
+  if (snapshot.orderNumber) {
+    y -= 14;
+    draw(`Bestellung: ${snapshot.orderNumber}`, 350);
+  }
   y -= 14;
   draw(`Fällig am: ${snapshot.dueDate}`, 350);
 
@@ -111,9 +114,12 @@ export async function generateInvoicePdf(snapshot: Record<string, any>) {
     draw("Rabatt", 380);
     draw(`-${money(snapshot.amounts.discountCents)}`, 500);
   }
-  y -= 16;
-  draw("Versand", 380);
-  draw(money(snapshot.amounts.shippingCents), 500);
+  // Standalone invoices have no shipping line.
+  if (Number(snapshot.amounts?.shippingCents ?? 0) > 0) {
+    y -= 16;
+    draw("Versand", 380);
+    draw(money(snapshot.amounts.shippingCents), 500);
+  }
   y -= 16;
   const taxRate = Number(snapshot.taxRate ?? 19);
   draw(`Enthaltene MwSt. (${taxRate} %)`, 380);

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { requireAdminAccess, auditAdminAction } from "@/lib/auth/admin";
 import { getMigrationAwareServerSupabase } from "@/lib/db/server";
 import { maybeIssueInvoice } from "@/lib/invoices/auto";
-import { issueInvoiceForOrder } from "@/lib/invoices/issue";
+import { issueInvoiceForOrder, issueStandaloneInvoice } from "@/lib/invoices/issue";
 import { invalidateShortcodeCache } from "@/lib/content/shortcodes";
 import { LEGAL_DEFAULTS } from "@/lib/legal/defaults";
 import { invalidateCatalogCache } from "@/lib/products/catalog";
@@ -530,4 +530,73 @@ export async function issueInvoice(formData: FormData) {
   const extraLines = readExtraLines(formData);
   const invoice = await issueInvoiceForOrder(orderId, extraLines.map((line) => ({ name: line.name, quantity: line.quantity, unitPriceCents: Math.round(line.price * 100), createProduct: line.site })));
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "invoice.issue", entity: "invoice", entityId: invoice.id, metadata: { order_id: orderId, invoice_number: invoice.invoiceNumber, extra_lines: extraLines.length, created_products: invoice.createdProducts.length } }); revalidatePath("/admin/rechnungen");
+}
+
+const standaloneLineSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  quantity: z.coerce.number().positive(),
+  price: z.coerce.number().positive(),
+  // German firewood is 7 % VAT; everything else defaults to 19 %.
+  taxRate: z.coerce.number().refine((value) => value === 7 || value === 19, { message: "Taux de TVA invalide." }),
+  site: z.boolean(),
+});
+
+const standaloneCustomerSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().optional().or(z.literal("")),
+  street: z.string().trim().optional().or(z.literal("")),
+  house_number: z.string().trim().optional().or(z.literal("")),
+  postcode: z.string().trim().optional().or(z.literal("")),
+  city: z.string().trim().optional().or(z.literal("")),
+});
+
+/**
+ * Reads the dynamic standalone-invoice line fields (`sa_name_N`, `sa_quantity_N`,
+ * `sa_price_N`, `sa_site_N`) plus the customer block.
+ */
+function readStandaloneLines(formData: FormData) {
+  const count = Number(formData.get("sa_line_count") ?? 0);
+  const lines = [];
+  for (let index = 0; index < count; index++) {
+    const name = String(formData.get(`sa_name_${index}`) ?? "").trim();
+    if (!name) continue;
+    const quantityRaw = String(formData.get(`sa_quantity_${index}`) ?? "1").trim().replace(",", ".");
+    const priceRaw = String(formData.get(`sa_price_${index}`) ?? "").trim().replace(",", ".");
+    if (!priceRaw) continue;
+    lines.push(standaloneLineSchema.parse({ name, quantity: quantityRaw, price: priceRaw, taxRate: formData.get(`sa_tax_${index}`) ?? "19", site: formData.get(`sa_site_${index}`) === "on" }));
+  }
+  return lines;
+}
+
+export async function issueStandaloneInvoiceAction(formData: FormData) {
+  const actor = await requireAdminAccess(["admin"]);
+  const customer = standaloneCustomerSchema.parse({
+    name: formData.get("sa_customer_name"),
+    email: formData.get("sa_customer_email"),
+    street: formData.get("sa_customer_street"),
+    house_number: formData.get("sa_customer_house_number"),
+    postcode: formData.get("sa_customer_postcode"),
+    city: formData.get("sa_customer_city"),
+  });
+  const lines = readStandaloneLines(formData);
+  const invoice = await issueStandaloneInvoice(
+    {
+      name: customer.name,
+      email: customer.email || null,
+      street: customer.street || null,
+      houseNumber: customer.house_number || null,
+      postcode: customer.postcode || null,
+      city: customer.city || null,
+    },
+    lines.map((line) => ({ name: line.name, quantity: line.quantity, unitPriceCents: Math.round(line.price * 100), taxRatePct: line.taxRate, createProduct: line.site })),
+  );
+  await auditAdminAction({
+    ...actor,
+    actorId: actor.userId,
+    action: "invoice.issue_standalone",
+    entity: "invoice",
+    entityId: invoice.id,
+    metadata: { invoice_number: invoice.invoiceNumber, lines: lines.length, created_products: invoice.createdProducts.length },
+  });
+  revalidatePath("/admin/rechnungen");
 }

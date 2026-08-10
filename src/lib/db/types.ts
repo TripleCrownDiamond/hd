@@ -33,7 +33,10 @@ export interface OrderRow {
 }
 
 export interface InvoiceRow {
-  id: string; order_id: string; invoice_number: string | null; kind: string; status: string;
+  id: string;
+  /** Null for standalone invoices raised without an order (20260810000017). */
+  order_id: string | null;
+  invoice_number: string | null; kind: string; status: string;
   currency: "EUR"; net_cents: number; tax_cents: number; gross_cents: number; snapshot: Json;
   document_path: string | null; document_sha256: string | null; issued_at: string | null;
   due_date: string | null; created_at: string; updated_at: string;

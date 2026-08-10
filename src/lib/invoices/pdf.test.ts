@@ -24,4 +24,9 @@ describe("invoice PDF", () => {
     // 5s default whenever the machine is also building. Flaky here reads as a
     // broken invoice, so give it room rather than let it cry wolf.
   }, 30_000);
+  it("lays out a standalone invoice without an order reference or shipping line", async () => {
+    const { generateInvoicePdf } = await import("./pdf");
+    const bytes = await generateInvoicePdf({ invoiceNumber: "RE-2026-000003", issuedAt: "2026-08-10T12:00:00.000Z", issueDate: "10.08.2026", dueDate: "24.08.2026", orderNumber: null, taxRate: 19, company: { name: "holz direkt GmbH - Holzimport", legalForm: "GmbH", street: "Bergweg 24", postalCode: "48485", city: "Neuenkirchen", countryCode: "DE", vatId: "DE813362690", taxNumber: null, commercialRegister: "HRB 3447", registerCourt: "Amtsgericht Steinfurt", email: "kontakt@holzdirekt.store", phone: "+49 1521 6824424" }, customer: { name: "Handkunde Schmidt", street: "Bahnhofstraße", houseNumber: "4", postcode: "48431", city: "Rheine" }, items: [{ name: "Brennholz Buche (direkt verkauft)", quantity: 3, unitPriceCents: 8999, lineTotalCents: 26997 }], amounts: { subtotalCents: 26997, discountCents: 0, shippingCents: 0, taxCents: 4310, totalCents: 26997 } });
+    expect(bytes.byteLength).toBeGreaterThan(1000); await writeFile("tmp/invoice-standalone.pdf", bytes);
+  }, 30_000);
 });

@@ -137,7 +137,8 @@ ${totals(data)}
 
 export interface InvoiceEmailData {
   invoiceNumber: string;
-  orderNumber: string;
+  /** Set for order invoices; a standalone invoice has no order. */
+  orderNumber?: string | null;
   customerName: string;
   companyName: string;
   totalCents: number;
@@ -146,11 +147,14 @@ export interface InvoiceEmailData {
 /** The issued invoice PDF is attached by the caller; this is the cover mail. */
 export function invoiceEmail(data: InvoiceEmailData): { subject: string; html: string; text: string } {
   const subject = `Ihre Rechnung ${data.invoiceNumber}`;
+  const reference = data.orderNumber
+    ? ` zu Ihrer Bestellung ${data.orderNumber}`
+    : " für die erbrachte Leistung";
   const inner = `<p>Hallo ${data.customerName},</p>
-<p>anbei erhalten Sie die Rechnung <strong>${data.invoiceNumber}</strong> zu Ihrer Bestellung ${data.orderNumber} als PDF-Dokument.</p>
+<p>anbei erhalten Sie die Rechnung <strong>${data.invoiceNumber}</strong>${reference} als PDF-Dokument.</p>
 <div style="background:#f3f7f1;border-radius:8px;padding:12px 16px;margin:16px 0;font-size:14px;">Rechnungsnummer: <strong style="color:${INK};">${data.invoiceNumber}</strong> · Betrag: <strong style="color:${INK};">${money(data.totalCents)}</strong></div>
 <p>Mit freundlichen Grüßen<br/><strong>${data.companyName}</strong></p>`;
-  const text = `Hallo ${data.customerName},\nanbei erhalten Sie die Rechnung ${data.invoiceNumber} zu Ihrer Bestellung ${data.orderNumber}.\nBetrag: ${money(data.totalCents)}\n\nMit freundlichen Grüßen\n${data.companyName}`;
+  const text = `Hallo ${data.customerName},\nanbei erhalten Sie die Rechnung ${data.invoiceNumber}${reference}.\nBetrag: ${money(data.totalCents)}\n\nMit freundlichen Grüßen\n${data.companyName}`;
   return { subject, html: layout("Ihre Rechnung", inner), text };
 }
 
