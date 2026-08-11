@@ -84,7 +84,9 @@ export async function issueInvoiceForOrder(
           price_cents_public: extra.unitPriceCents,
           quote_mode: false,
           extra: {},
-          is_published: true,
+          // An invoice-only line item must never surface in the shop: the
+          // storefront renders approved products only when they are published.
+          is_published: false,
           review_status: "approved",
         })
         .select("id,slug")
@@ -285,7 +287,9 @@ export async function issueStandaloneInvoice(
         price_cents_public: line.unitPriceCents,
         quote_mode: false,
         extra: {},
-        is_published: true,
+        // Invoice-only line item: same rule as above — never sell it in the
+        // storefront, only reference it from the issued invoice.
+        is_published: false,
         review_status: "approved",
       })
       .select("id,slug")

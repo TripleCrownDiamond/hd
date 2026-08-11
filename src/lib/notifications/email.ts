@@ -70,7 +70,10 @@ function formatFrom(name: string | undefined, email: string): string {
 function smtpConfig(): SmtpConfig | null {
   const host = process.env.SMTP_HOST?.trim();
   const user = process.env.SMTP_USER?.trim();
-  const password = process.env.SMTP_PASSWORD;
+  // A password legitimately contains every special character, so env loaders
+  // that keep surrounding quotes (or a bash `source` that cut at an unquoted
+  // `#`) must not silently break authentication: strip one matching pair.
+  const password = process.env.SMTP_PASSWORD?.replace(/^(["'])(.*)\1$/, "$2");
   if (!host || !user || !password) return null;
 
   const port = Number(process.env.SMTP_PORT ?? 465);
@@ -97,7 +100,10 @@ let transporter: Transporter | null = null;
 let transporterKey = "";
 
 function getTransporter(config: SmtpConfig): Transporter {
-  const key = `${config.host}:${config.port}:${config.user}`;
+  // The password is part of the identity: a stale pooled connection built with
+  // a truncated value would otherwise keep failing every send after the env
+  // was corrected, until the process restarted.
+  const key = `${config.host}:${config.port}:${config.user}:${config.password}`;
   if (transporter && transporterKey === key) return transporter;
   transporter = nodemailer.createTransport({
     host: config.host,

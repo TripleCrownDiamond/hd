@@ -197,7 +197,7 @@ function CategoryGrid({ categories }: { categories: CatalogCategory[] }) {
               Unser Sortiment
             </h2>
             <p className="text-muted mt-2 max-w-xl">
-              Sechs Kategorien, klare Angaben — kein Marketing-Nebel.
+              {categories.length} Kategorien, klare Angaben — kein Marketing-Nebel.
             </p>
           </div>
           <Button asChild variant="ghost">
@@ -209,7 +209,11 @@ function CategoryGrid({ categories }: { categories: CatalogCategory[] }) {
         </div>
 
         <div className="mt-10 grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-          {categories.map((cat, i) => {
+          {categories
+            // A tile linking to a category page with nothing on it is a dead
+            // end; only categories that actually carry published products.
+            .filter((cat) => cat.productCount > 0)
+            .map((cat, i) => {
             const isFeatured = i === 0;
             const publicId = categoryImageBySlug[cat.slug];
             return (

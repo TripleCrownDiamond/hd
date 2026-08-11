@@ -112,6 +112,7 @@ async function buildMegaMenu(): Promise<MegaMenuSection[]> {
       .from("products")
       .select("id,slug,kind,model,brand_id,price_cents_public,extra,power_kw_nominal")
       .eq("review_status", "approved")
+      .eq("is_published", true)
       .order("model", { ascending: true })
       .range(0, 1999),
     supabase.from("brands").select("*"),
@@ -236,14 +237,12 @@ async function buildMegaMenu(): Promise<MegaMenuSection[]> {
     { kind: "accessory", label: "Zubehör" },
   ];
 
-  // These have a dedicated catalogue page and stay reachable even while their
-  // first approved products are still in review, so a brand-new category never
-  // vanishes from the menu. The others appear once they carry products.
-  const alwaysVisible = new Set<Kind>(["log", "coal"]);
-
+  // Only categories that actually carry published products appear here: a
+  // menu link to an empty catalogue page is a dead end, and an admin can
+  // unpublish a whole category at once.
   const remaining = fuelKinds
     .map(({ kind, label }) => ({ kind, label, items: byKind.get(kind) ?? [] }))
-    .filter((entry) => entry.items.length > 0 || alwaysVisible.has(entry.kind));
+    .filter((entry) => entry.items.length > 0);
 
   if (remaining.length > 0) {
     const first = remaining[0]!;

@@ -258,7 +258,11 @@ async function readRows(filters?: {
       .select(columns)
       // Only approved products are rendered: a listing whose declaration is
       // incomplete cannot let a visitor decide, so it must not be shown at all.
-      .eq("review_status", "approved");
+      .eq("review_status", "approved")
+      // …and only the ones the admin kept published. A product marked "Hors
+      // ligne" in the admin must disappear from the storefront at once, not
+      // merely from the checkout.
+      .eq("is_published", true);
     query = filters?.recent
       ? query.order("created_at", { ascending: false }).order("slug", { ascending: true })
       : query.order("model", { ascending: true }).order("slug", { ascending: true });
@@ -315,6 +319,7 @@ async function readRows(filters?: {
             .select("*, products!inner()")
             .eq("products.kind", filters!.kind!)
             .eq("products.review_status", "approved")
+            .eq("products.is_published", true)
             .eq("is_active", true)
             .order("product_id", { ascending: true })
             .order("position", { ascending: true })
@@ -340,6 +345,7 @@ async function readRows(filters?: {
             .select("*, products!inner()")
             .eq("products.kind", filters!.kind!)
             .eq("products.review_status", "approved")
+            .eq("products.is_published", true)
             .order("product_id", { ascending: true })
             .order("position", { ascending: true })
             .range(from, to);
@@ -510,6 +516,7 @@ const getCachedPublishedCategories = cachedRead(
             .from("products")
             .select("category_id")
             .eq("review_status", "approved")
+            .eq("is_published", true)
             .order("id", { ascending: true })
             .range(from, to),
       ),
