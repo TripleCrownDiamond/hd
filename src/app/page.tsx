@@ -24,7 +24,9 @@ import {
   getPublishedCardProducts,
   getPublishedCategories,
   getPublishedStoves,
+  getRecentlyAddedProducts,
   type CatalogCategory,
+  type RecentProduct,
   type WoodCatalogProduct,
 } from "@/lib/products/catalog";
 import type { ScrapedProduct } from "@/lib/products/scraped";
@@ -759,6 +761,45 @@ function FuelSection({
   );
 }
 
+/**
+ * The latest arrivals, whatever kind they are.
+ *
+ * Every other row on this page is one product type, so an import that lands in
+ * a category a visitor never scrolls to is invisible on the home page. This row
+ * is ordered by arrival instead, and mixes the cards accordingly.
+ */
+function NewArrivalsSection({ items }: { items: RecentProduct[] }) {
+  if (items.length === 0) return null;
+  return (
+    <section className="border-border bg-elevated/40 border-t py-16 md:py-24">
+      <div className="container-site">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <Badge variant="default" className="bg-accent/10 text-accent mb-3">
+              Neu im Sortiment
+            </Badge>
+            <h2 className="font-display text-text text-3xl font-semibold md:text-4xl">
+              Zuletzt aufgenommen
+            </h2>
+            <p className="text-muted mt-2 max-w-xl">
+              Die jüngsten Aufnahmen ins Sortiment — quer durch alle Kategorien.
+            </p>
+          </div>
+        </div>
+        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map((item) =>
+            item.kind === "stove" ? (
+              <ScrapedStoveCard key={item.stove.slug} product={item.stove} />
+            ) : (
+              <WoodProductCard key={item.product.id} product={item.product} />
+            ),
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default async function HomePage() {
   const [
     categories,
@@ -770,6 +811,7 @@ export default async function HomePage() {
     kindling,
     coal,
     accessories,
+    recent,
     reviews,
     articles,
     settingsResult,
@@ -783,6 +825,7 @@ export default async function HomePage() {
     getPublishedCardProducts("kindling"),
     getPublishedCardProducts("coal"),
     getPublishedCardProducts("accessory"),
+    getRecentlyAddedProducts(8),
     getShopReviews(3),
     getLatestArticles(3),
     getMigrationAwarePublicSupabase()
@@ -799,6 +842,7 @@ export default async function HomePage() {
       <HeroSection />
       <BenefitsStrip />
       <CategoryGrid categories={categories} />
+      <NewArrivalsSection items={recent} />
       <FeaturedProducts woodProducts={woodProducts} />
       <StammholzSection products={logs as WoodCatalogProduct[]} />
       <StoveSection stoves={stoves} />

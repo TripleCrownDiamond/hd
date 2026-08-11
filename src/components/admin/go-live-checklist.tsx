@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getCompany } from "@/lib/company-server";
 import { missingMandatoryFields } from "@/lib/company";
@@ -106,36 +106,33 @@ export async function GoLiveChecklist() {
 
   const open = blockers.filter((blocker) => !blocker.ok);
 
+  // Nothing to act on, nothing to show. A permanent all-green panel is noise an
+  // operator learns to scroll past, which is exactly how a real warning gets
+  // missed later — so the card exists only while something needs doing.
+  if (open.length === 0) return null;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Prêt à vendre</CardTitle>
         <CardDescription>
-          {open.length === 0
-            ? "Toutes les conditions sont réunies."
-            : `${open.length} point(s) en suspens. Tant que le premier n'est pas réglé, aucune commande ne peut être finalisée.`}
+          {`${open.length} point(s) en suspens. Tant que le premier n'est pas réglé, aucune commande ne peut être finalisée.`}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <ul className="divide-border divide-y">
-          {blockers.map((blocker) => (
+          {open.map((blocker) => (
             <li key={blocker.label} className="flex items-start gap-3 py-3">
-              {blocker.ok ? (
-                <Check className="text-success mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              ) : (
-                <AlertTriangle className="text-warning mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              )}
+              <AlertTriangle className="text-warning mt-0.5 size-4 shrink-0" aria-hidden="true" />
               <div className="min-w-0">
                 <p className="text-text text-sm font-medium">
                   {blocker.label}
-                  <span className="sr-only">{blocker.ok ? " — réglé" : " — en suspens"}</span>
+                  <span className="sr-only"> — en suspens</span>
                 </p>
                 <p className="text-muted mt-0.5 text-sm">{blocker.detail}</p>
-                {!blocker.ok && (
-                  <Link href={blocker.href} className="text-accent mt-1 inline-block text-sm underline">
-                    Configurer maintenant
-                  </Link>
-                )}
+                <Link href={blocker.href} className="text-accent mt-1 inline-block text-sm underline">
+                  Configurer maintenant
+                </Link>
               </div>
             </li>
           ))}

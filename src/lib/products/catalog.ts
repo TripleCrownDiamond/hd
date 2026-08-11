@@ -244,6 +244,12 @@ async function readRows(filters?: {
    * thousand products meant thousands of rows and a page that never finished.
    */
   heroOnly?: boolean;
+  /**
+   * Take the N most recently created products across every kind instead of a
+   * whole kind in model order. Used by the home page's "Neu im Sortiment" row,
+   * which is about *when* something arrived rather than what it is.
+   */
+  recent?: number;
 }): Promise<CatalogRows> {
   const supabase = getCatalogReadSupabase();
   const selectProducts = (columns: string, from: number, to: number) => {
@@ -252,10 +258,13 @@ async function readRows(filters?: {
       .select(columns)
       // Only approved products are rendered: a listing whose declaration is
       // incomplete cannot let a visitor decide, so it must not be shown at all.
-      .eq("review_status", "approved")
-      .order("model", { ascending: true })
-      .order("slug", { ascending: true })
-      .range(from, to);
+      .eq("review_status", "approved");
+    query = filters?.recent
+      ? query.order("created_at", { ascending: false }).order("slug", { ascending: true })
+      : query.order("model", { ascending: true }).order("slug", { ascending: true });
+    // Clamping `to` ends `readAllRows` after one short page rather than walking
+    // the whole catalogue to throw all but the first N rows away.
+    query = query.range(from, filters?.recent ? Math.min(to, filters.recent - 1) : to);
     if (filters?.kind) query = query.eq("kind", filters.kind);
     if (filters?.slug) query = query.eq("slug", filters.slug);
     return query;
@@ -551,6 +560,33 @@ export async function getPublishedCardProducts(
   kind: FuelKind | "accessory",
 ): Promise<Array<WoodCatalogProduct | StorefrontProduct>> {
   return getCachedPublishedCardProducts(kind);
+}
+
+/**
+ * What the newest import added, whatever kind it is.
+ *
+ * A stove and a pallet of pellets render with different cards, so the kind is
+ * carried alongside the mapped product rather than flattened away.
+ */
+export type RecentProduct =
+  | { kind: "stove"; stove: ScrapedProduct }
+  | { kind: "fuel"; product: WoodCatalogProduct };
+
+const getCachedRecentProducts = cachedRead(
+  "recent",
+  async (limitArgument: string): Promise<RecentProduct[]> => {
+    const rows = await readRows({ recent: Number(limitArgument), heroOnly: true });
+    return rows.products.map((product) =>
+      product.kind === "stove"
+        ? { kind: "stove" as const, stove: toStove(product, rows) }
+        : { kind: "fuel" as const, product: toWoodProduct(product, rows) },
+    );
+  },
+);
+
+/** The `limit` most recently added products, newest first. */
+export async function getRecentlyAddedProducts(limit = 8): Promise<RecentProduct[]> {
+  return getCachedRecentProducts(String(limit));
 }
 
 const getCachedFuelProducts = cachedRead(

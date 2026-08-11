@@ -72,6 +72,12 @@ export const TRADING_NAME = BRAND_NAME;
 /**
  * Fields § 5 DDG requires that the profile does not yet carry. The Impressum
  * keeps its warning banner for as long as this is non-empty.
+ *
+ * The representative's name is deliberately *not* checked here. § 5 Abs. 1 Nr. 1
+ * DDG does require it for a GmbH, and the Impressum still prints it whenever it
+ * is filled in — but the operator decides when to supply it, and an empty field
+ * must not hold the shop's go-live behind a warning it cannot clear. The gap
+ * stays visible on the Impressum itself through `orGap`.
  */
 export function missingMandatoryFields(company: CompanyProfile): string[] {
   const missing: string[] = [];
@@ -79,7 +85,6 @@ export function missingMandatoryFields(company: CompanyProfile): string[] {
     missing.push("Ladungsfähige Anschrift");
   }
   if (!company.email) missing.push("E-Mail-Adresse");
-  if (!company.managingDirector) missing.push("Vertretungsberechtigte Person");
   if (!company.vatId) missing.push("Umsatzsteuer-Identifikationsnummer");
   return missing;
 }
