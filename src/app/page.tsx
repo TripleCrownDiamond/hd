@@ -18,7 +18,6 @@ import { cld, IMAGES } from "@/lib/cloudinary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { DeliveryChecker } from "@/components/commerce/delivery-checker";
 import { WoodProductCard } from "@/components/commerce/wood-product-card";
 import { NewsletterForm } from "@/components/commerce/newsletter-form";
 import {
@@ -92,9 +91,6 @@ function HeroSection() {
               </Button>
             </div>
 
-            <div className="mt-10">
-              <DeliveryChecker />
-            </div>
           </div>
 
           <div className="order-1 md:order-2">
@@ -545,45 +541,40 @@ function DeliverySection() {
   return (
     <section className="border-border bg-brand border-t py-16 text-white md:py-24">
       <div className="container-site">
-        <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
-          <div>
-            <Badge variant="default" className="mb-4 bg-white/10 text-white">
-              Lieferung
-            </Badge>
-            <h2 className="font-display text-3xl leading-tight font-semibold text-white md:text-4xl">
-              Klare Bedingungen. Ehrliche Termine.
-            </h2>
-            <p className="mt-4 text-white/70">
-              Liefergebiete, Preise und Zufahrtsanforderungen werden vor der Freigabe aus
-              geprüften Daten berechnet.
-            </p>
-            <ul className="mt-6 space-y-2 text-sm text-white/80">
-              <li className="flex items-start gap-2">
-                <PackageCheck
-                  className="text-accent mt-0.5 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                Keine Schätzung ohne freigegebene Lieferregel
-              </li>
-              <li className="flex items-start gap-2">
-                <PackageCheck
-                  className="text-accent mt-0.5 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                Preis und Bedingungen werden serverseitig berechnet
-              </li>
-              <li className="flex items-start gap-2">
-                <PackageCheck
-                  className="text-accent mt-0.5 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                Der Rechner bleibt bis zur Datenfreigabe deaktiviert
-              </li>
-            </ul>
-          </div>
-          <div className="[&_h3]:text-text">
-            <DeliveryChecker />
-          </div>
+        <div className="mx-auto max-w-2xl text-center">
+          <Badge variant="default" className="mb-4 bg-white/10 text-white">
+            Lieferung
+          </Badge>
+          <h2 className="font-display text-3xl leading-tight font-semibold text-white md:text-4xl">
+            Klare Bedingungen. Ehrliche Termine.
+          </h2>
+          <p className="mt-4 text-white/70">
+            Wir liefern in ganz Deutschland und nach Europa — zuverlässig bis zur
+            Bordsteinkante, Liefertermin nach individueller Absprache.
+          </p>
+          <ul className="mt-6 space-y-2 text-sm text-white/80">
+            <li className="flex items-center justify-center gap-2">
+              <PackageCheck
+                className="text-accent size-4 shrink-0"
+                aria-hidden="true"
+              />
+              Bundesweite Lieferung bis zur Bordsteinkante
+            </li>
+            <li className="flex items-center justify-center gap-2">
+              <PackageCheck
+                className="text-accent size-4 shrink-0"
+                aria-hidden="true"
+              />
+              Liefertermin nach individueller Absprache
+            </li>
+            <li className="flex items-center justify-center gap-2">
+              <PackageCheck
+                className="text-accent size-4 shrink-0"
+                aria-hidden="true"
+              />
+              Preis und Bedingungen werden serverseitig berechnet
+            </li>
+          </ul>
         </div>
       </div>
     </section>
