@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { media } from "@/lib/media";
-import type { ScrapedProduct } from "@/lib/products/scraped";
+import { hasVariantPriceRange, type ScrapedProduct } from "@/lib/products/scraped";
 import { useShortlists } from "@/lib/shortlists/shortlist-store";
 
 export function ScrapedStoveCard({
@@ -163,7 +163,9 @@ export function ScrapedStoveCard({
         <div className="mt-auto">
           <p className="text-text font-mono text-base font-semibold tabular-nums">
             {hasPublicPrice
-              ? `ab ${formatEuro(product.pricing.price_cents_public!)}`
+              ? hasVariantPriceRange(product.variants)
+                ? `ab ${formatEuro(product.pricing.price_cents_public!)}`
+                : formatEuro(product.pricing.price_cents_public!)
               : "Auf Anfrage"}
           </p>
           <p className="text-muted mt-0.5 text-xs">

@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/accordion";
 import { cn, normalizeGermanNumbers } from "@/lib/utils";
 import { media } from "@/lib/media";
-import type { ScrapedProduct, ScrapedVariant } from "@/lib/products/scraped";
+import { hasVariantPriceRange, type ScrapedProduct, type ScrapedVariant } from "@/lib/products/scraped";
 import { useCart } from "@/lib/cart/cart-store";
 import { useShortlists, type ShortlistEntry } from "@/lib/shortlists/shortlist-store";
 
@@ -320,12 +320,16 @@ export function StoveDetail({ product }: { product: ScrapedProduct }) {
               <CardContent className="pt-6">
                 <p className="font-mono text-2xl font-semibold tabular-nums text-brand">
                   {hasPublicPrice
-                    ? `ab ${formatEuro(product.pricing.price_cents_public!)}`
+                    ? hasVariantPriceRange(product.variants)
+                      ? `ab ${formatEuro(product.pricing.price_cents_public!)}`
+                      : formatEuro(product.pricing.price_cents_public!)
                     : "Auf Anfrage"}
                 </p>
                 <p className="mt-1 text-sm text-muted">
                   {hasPublicPrice
-                    ? "Herstellerpreis inkl. MwSt.; Ausführung und Zubehör können den Preis verändern."
+                    ? hasVariantPriceRange(product.variants)
+                      ? "Herstellerpreis inkl. MwSt.; Ausführung und Zubehör können den Preis verändern."
+                      : "Herstellerpreis inkl. MwSt."
                     : "Persönliches Angebot mit Zubehör und Montage in Ihrer Region."}
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">

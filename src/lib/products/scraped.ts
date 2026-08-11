@@ -8,6 +8,17 @@ export interface ScrapedVariant {
   surcharge_cents: number | null;
 }
 
+/**
+ * True when the variants carry at least two different prices — i.e. the
+ * product is genuinely price-variable and deserves an "ab" (from) price.
+ * Colour variants that all share the same price are not variable: the base
+ * price is the fixed price and must not be prefixed with "ab".
+ */
+export function hasVariantPriceRange(variants: ScrapedVariant[]): boolean {
+  const prices = new Set(variants.map((variant) => variant.surcharge_cents ?? 0));
+  return prices.size > 1;
+}
+
 export interface ScrapedVariantCloudinary {
   code: string;
   main: string | null;
