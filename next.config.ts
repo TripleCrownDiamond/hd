@@ -16,10 +16,10 @@ const nextConfig: NextConfig = {
   },
   images: {
     // Everything is resized and re-encoded by the local optimizer (sharp) —
-    // the default Next loader. Product images are being migrated off
-    // Cloudinary/ImageKit into the public Supabase Storage bucket
-    // `produkt-bilder` (scripts/publish/migrate-media-local.mjs), so the CDN
-    // transforms are on their way out.
+    // the default Next loader. Product images now live in `public/images/`
+    // (scripts/publish/migrate-media-public.mjs downloaded every image the
+    // site can show and rewrote the references to `local:`), so the CDN
+    // patterns below are only a fallback for not-yet-migrated references.
     deviceSizes: [360, 480, 640, 828, 1080, 1280, 1600],
     imageSizes: [120, 200, 240, 320, 480],
     remotePatterns: [

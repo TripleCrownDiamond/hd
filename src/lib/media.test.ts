@@ -12,16 +12,12 @@ afterEach(() => {
 });
 
 describe("media", () => {
-  it("resolves a local: reference to the public produkt-bilder bucket", () => {
-    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://abc.supabase.co";
+  it("resolves a local: reference to a file served by this app", () => {
     const url = media("local:holzkraft/products/buche-25.webp");
-    expect(url).toBe(
-      "https://abc.supabase.co/storage/v1/object/public/produkt-bilder/holzkraft/products/buche-25.webp",
-    );
+    expect(url).toBe("/images/holzkraft/products/buche-25.webp");
   });
 
   it("passes local images through unmodified (no CDN transforms)", () => {
-    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://abc.supabase.co";
     const url = media("local:holzkraft/products/buche-25.webp", {
       width: 400,
       crop: "fill",
@@ -29,7 +25,7 @@ describe("media", () => {
     // The Next optimizer resizes locally; the URL must not carry CDN syntax.
     expect(url).not.toContain("w_400");
     expect(url).not.toContain("?tr=");
-    expect(url).toContain("/produkt-bilder/holzkraft/products/buche-25.webp");
+    expect(url).toContain("/images/holzkraft/products/buche-25.webp");
   });
 
   it("keeps bare references as Cloudinary public ids", () => {

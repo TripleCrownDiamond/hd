@@ -1,26 +1,20 @@
 /**
- * Cloudinary URL builder — no SDK, no bundle cost at runtime.
- * Always emits `f_auto,q_auto` for automatic format (AVIF/WebP) and quality.
+ * Cloudinary URL builder — kept only as a fallback for legacy references that
+ * have not been migrated yet.
  *
- * A `local:` reference is passed through to the self-hosted Supabase Storage
- * bucket (see src/lib/media.ts): the migration rewrites these values, and the
- * Next optimizer resizes locally.
+ * A `local:` reference resolves to a file inside `public/images/` (see
+ * scripts/publish/migrate-media-public.mjs): the migration downloads and
+ * re-encodes every site image locally, and the Next optimizer resizes it.
  */
 
 const CLOUD_NAME = "pq4soawt";
 const BASE = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`;
 
 const LOCAL_PREFIX = "local:";
-const BUCKET = "produkt-bilder";
 
-/** e.g. https://unosconddkwxiknibzuo.supabase.co — the storage URL shares it. */
-function supabaseBase(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") ?? "";
-}
-
-/** Full public URL of a `local:` reference inside the produkt-bilder bucket. */
+/** Public URL of a `local:` reference — a file served by this app itself. */
 export function localMediaUrl(path: string): string {
-  return `${supabaseBase()}/storage/v1/object/public/${BUCKET}/${path}`;
+  return `/images/${path}`;
 }
 
 /** True when a stored media reference points at the self-hosted bucket. */

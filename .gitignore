@@ -54,3 +54,6 @@ tsconfig.tsbuildinfo
 # Local artefacts (screenshots, ad-hoc scripts)
 output/playwright/
 scratchpad/
+
+# Isolated Next.js dev builds (run doc: NEXT_DIST_DIR per port)
+.next-*/

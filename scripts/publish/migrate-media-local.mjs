@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 /**
- * Migrate product images off Cloudinary/ImageKit onto self-hosted Supabase
- * Storage.
+ * SUPERSEDED — see migrate-media-public.mjs, which downloads every image into
+ * `public/images/` instead of the Supabase Storage bucket. This script is kept
+ * for reference only; running it now writes `local:` refs that no longer
+ * resolve (localMediaUrl serves /images/).
+ *
+ * Legacy behaviour: migrate product images off Cloudinary/ImageKit onto
+ * self-hosted Supabase Storage.
  *
  * Every `product_media` image is downloaded from its current provider,
  * re-encoded locally with sharp (WebP, max 1600 px, quality 80) and uploaded to

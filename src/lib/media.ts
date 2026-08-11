@@ -1,19 +1,17 @@
 /**
  * Build a delivery URL for a stored product-media reference.
  *
- * Three providers coexist:
+ * Providers:
  *
- * - `local:` — self-hosted in the public Supabase Storage bucket
- *   `produkt-bilder` (scripts/publish/migrate-media-local.mjs moves images
- *   there and rewrites the reference). This is the target: everything is being
- *   migrated off the CDNs.
- * - `imagekit:` — ImageKit, used for uploads after Cloudinary's quota filled.
- * - a bare value — a Cloudinary public_id, everything published before that.
+ * - `local:` — a file inside `public/images/` (scripts/publish/
+ *   migrate-media-public.mjs downloads every site image there and rewrites the
+ *   reference). This is the target: the whole site is served without any CDN.
+ * - `imagekit:` / bare Cloudinary id — legacy references not yet migrated;
+ *   they keep resolving to their CDN until the migration script rewrites them.
  *
  * Callers pass the reference and never need to know which is which. Local
- * images are served without CDN transforms and resized on the fly by the Next
- * image optimizer (sharp on the same server), since the app uses the default
- * loader.
+ * images are served by this app and resized on the fly by the Next image
+ * optimizer (sharp on the same server), since the app uses the default loader.
  */
 
 import { cld, localMediaUrl, isLocalRef, type CldOptions } from "./cloudinary";
