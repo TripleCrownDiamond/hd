@@ -124,8 +124,8 @@ export default async function KaminoefenPage({
                       Kaminöfen
                     </h1>
                     <p className="mt-2 max-w-2xl text-sm text-muted">
-                      Herstellerdaten im Prüfmodus: Leistung, Wirkungsgrad,
-                      Brennstoff und Abmessungen. Noch nicht zum Verkauf freigegeben.
+                      Leistung, Wirkungsgrad, Brennstoff und Abmessungen —
+                      noch nicht zum Verkauf freigegeben.
                     </p>
                   </div>
                 </div>

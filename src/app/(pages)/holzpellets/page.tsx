@@ -13,7 +13,7 @@ export default async function HolzpelletsPage({
       basePath="/holzpellets"
       kind="pellet"
       title="Holzpellets"
-      description="Pellets mit deklarierter Menge und Verpackung. Angaben stammen direkt von der Lieferantenquelle."
+      description="Pellets mit deklarierter Menge und Verpackung."
     />
   );
 }

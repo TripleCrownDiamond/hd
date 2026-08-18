@@ -112,8 +112,7 @@ export function StoveComparison() {
                   Kaminöfen vergleichen
                 </h1>
                 <p className="text-muted mt-2 max-w-2xl text-sm">
-                  Bis zu {COMPARE_LIMIT} Modelle nebeneinander. Angaben stammen aus
-                  Herstellerdaten und sind noch in Prüfung.
+                  Bis zu {COMPARE_LIMIT} Modelle nebeneinander. Angaben noch in Prüfung.
                 </p>
               </div>
             </div>

@@ -328,8 +328,8 @@ export function StoveDetail({ product }: { product: ScrapedProduct }) {
                 <p className="mt-1 text-sm text-muted">
                   {hasPublicPrice
                     ? hasVariantPriceRange(product.variants)
-                      ? "Herstellerpreis inkl. MwSt.; Ausführung und Zubehör können den Preis verändern."
-                      : "Herstellerpreis inkl. MwSt."
+                      ? "inkl. MwSt.; Ausführung und Zubehör können den Preis verändern."
+                      : "inkl. MwSt."
                     : "Persönliches Angebot mit Zubehör und Montage in Ihrer Region."}
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">

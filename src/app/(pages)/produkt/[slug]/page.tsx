@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { media } from "@/lib/media";
@@ -113,12 +112,7 @@ export default async function ProduktDetailPage({
                   priority
                 />
               ) : null}
-              <Badge
-                variant="brand"
-                className="absolute top-4 left-4 border border-white/20 shadow-sm"
-              >
-                Lieferantendaten
-              </Badge>
+
             </div>
             {product.images.length > 1 && (
               <div className="grid grid-cols-4 gap-2 p-3">
@@ -155,7 +149,7 @@ export default async function ProduktDetailPage({
             </p>
             <p className="text-muted mt-1 text-sm">
               {hasPublicPrice
-                ? "inkl. MwSt. · Preis der Lieferantenquelle. Versand und Lieferzone sind noch nicht kalkuliert."
+                ? "inkl. MwSt."
                 : "Der Preis wird nach abgeschlossener Prüfung veröffentlicht."}
             </p>
 
@@ -202,15 +196,7 @@ export default async function ProduktDetailPage({
               </>
             )}
 
-            <Card className="mt-6 p-0">
-              <CardContent className="p-4">
-                <p className="text-muted text-sm">
-                  Dieser Eintrag stammt aus einer Lieferantenquelle und befindet sich in
-                  der Katalogprüfung ({product.reviewStatus}). Bestellung und Lieferung
-                  sind noch nicht freigeschaltet.
-                </p>
-              </CardContent>
-            </Card>
+
           </div>
         </div>
       </div>

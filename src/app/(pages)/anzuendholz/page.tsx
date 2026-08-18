@@ -13,7 +13,7 @@ export default async function AnzuendholzPage({
       basePath="/anzuendholz"
       kind="kindling"
       title="Anzündholz"
-      description="Anzünd- und Anfeuerholz in Sack, Netz oder Karton. Angaben zu Holzart und Menge stammen direkt von der Lieferantenquelle."
+      description="Anzünd- und Anfeuerholz in Sack, Netz oder Karton. Holzart und Menge klar deklariert."
     />
   );
 }

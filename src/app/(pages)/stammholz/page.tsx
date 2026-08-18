@@ -19,7 +19,7 @@ export default async function StammholzPage({
       basePath="/stammholz"
       kind="log"
       title="Stammholz & Meterholz"
-      description="Rundholz, Meterscheite und Polterholz zum Selberspalten. Länge, Holzart und Menge in Ster oder Festmeter stammen direkt von der Lieferantenquelle."
+      description="Rundholz, Meterscheite und Polterholz zum Selberspalten. Länge, Holzart und Menge in Ster oder Festmeter."
     />
   );
 }

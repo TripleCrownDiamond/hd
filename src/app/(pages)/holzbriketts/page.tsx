@@ -13,7 +13,7 @@ export default async function HolzbrikettsPage({
       basePath="/holzbriketts"
       kind="briquette"
       title="Holzbriketts"
-      description="Briketts mit deklarierter Menge und Verpackung. Angaben stammen direkt von der Lieferantenquelle."
+      description="Briketts mit deklarierter Menge und Verpackung."
     />
   );
 }

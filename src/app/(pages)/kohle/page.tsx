@@ -19,7 +19,7 @@ export default async function KohlePage({
       basePath="/kohle"
       kind="coal"
       title="Kohle & Grillkohle"
-      description="Braunkohle, Steinkohle, Anthrazit und Grillkohle. Körnung, Gebinde und Menge stammen direkt von der Lieferantenquelle."
+      description="Braunkohle, Steinkohle, Anthrazit und Grillkohle. Körnung, Gebinde und Menge klar deklariert."
     />
   );
 }

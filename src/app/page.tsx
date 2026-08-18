@@ -324,16 +324,12 @@ function StoveSection({ stoves }: { stoves: ScrapedProduct[] }) {
       <div className="container-site">
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Badge variant="default" className="bg-accent/10 text-accent mb-3">
-              Kaminöfen — Herstellerdaten
-            </Badge>
             <h2 className="font-display text-text text-3xl leading-tight font-semibold md:text-4xl">
               Der passende Ofen. Ohne Nebelkerzen.
             </h2>
             <p className="text-muted mt-3 max-w-2xl">
-              Leistung, Wirkungsgrad, Farben und Abmessungen aus Herstellerdaten. Texte
-              und Bilder sind zur Nutzung freigegeben. Technische Angaben bleiben bis zur
-              abgeschlossenen Konformitätsprüfung als Herstellerdaten gekennzeichnet.
+              Leistung, Wirkungsgrad, Farben und Abmessungen —
+              technische Angaben noch in Prüfung.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -858,7 +854,7 @@ export default async function HomePage() {
       />
       <FuelSection
         title="Holzpellets"
-        description="Sackware und Palettenmengen von geprüften Lieferanten."
+        description="Sackware und Palettenmengen — klar deklariert."
         href="/holzpellets"
         products={pellets as WoodCatalogProduct[]}
       />

@@ -13,7 +13,7 @@ export default async function BrennholzPage({
       basePath="/brennholz"
       kind="wood"
       title="Brennholz"
-      description="Kaminholz von geprüften Lieferanten. Klar deklariert nach Holzart, Länge, Restfeuchte und Menge — Angaben stammen direkt von der Quelle."
+      description="Kaminholz — klar deklariert nach Holzart, Länge, Restfeuchte und Menge."
     />
   );
 }

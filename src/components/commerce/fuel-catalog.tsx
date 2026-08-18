@@ -39,7 +39,6 @@ function buildFilterGroups(products: WoodCatalogProduct[]): FilterGroup[] {
     facet("length", "laenge", "Länge", (p) => p.length),
     facet("moisture", "feuchte", "Restfeuchte", (p) => p.moisture),
     facet("unit", "einheit", "Einheit", (p) => p.unit),
-    facet("brand", "lieferant", "Lieferant", (p) => p.brand ?? ""),
   ].filter((group): group is FilterGroup => group !== null);
 }
 
@@ -49,7 +48,7 @@ export interface FuelCatalogProps {
   description: string;
   /** Route the pagination links point back at. */
   basePath: string;
-  /** `holzart`, `laenge`, `lieferant` — the facets the mega menu links to. */
+  /** `holzart`, `laenge`, `feuchte`, `einheit` — the facets the mega menu links to. */
   searchParams?: Record<string, string | string[] | undefined>;
 }
 
@@ -69,7 +68,6 @@ export async function FuelCatalog({
 
   const woodType = firstValue(searchParams?.holzart);
   const length = firstValue(searchParams?.laenge);
-  const supplier = firstValue(searchParams?.lieferant);
   const moisture = firstValue(searchParams?.feuchte);
   const unit = firstValue(searchParams?.einheit);
 
@@ -77,7 +75,6 @@ export async function FuelCatalog({
     (product) =>
       (!woodType || product.woodType === woodType) &&
       (!length || product.length === length) &&
-      (!supplier || product.brand === supplier) &&
       (!moisture || product.moisture === moisture) &&
       (!unit || product.unit === unit),
   );
@@ -130,9 +127,7 @@ export async function FuelCatalog({
                     <> · Seite {slice.page} von {slice.pageCount}</>
                   )}
                 </p>
-                <p className="text-muted text-xs">
-                  Lieferantendaten in Prüfung — noch nicht zum Verkauf freigegeben.
-                </p>
+
               </div>
             </Card>
 
