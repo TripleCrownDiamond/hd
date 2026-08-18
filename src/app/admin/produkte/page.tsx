@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { Pencil, Plus, Archive, Search } from "lucide-react";
+import { Pencil, Plus, Search } from "lucide-react";
 import { getMigrationAwareServerSupabase } from "@/lib/db/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AdminHeader, EmptyAdmin, Field, fieldClass, areaClass } from "@/components/admin/admin-ui";
 import { GrundpreisFields } from "@/components/admin/grundpreis-fields";
 import type { BasePriceUnit, QuantityUnit } from "@/lib/utils";
-import { archiveProduct, saveProduct } from "../actions";
+import { saveProduct } from "../actions";
 
 /**
  * The catalogue is ~2 700 products. A flat `.limit(100)` silently hid 96 % of
@@ -105,7 +105,7 @@ export default async function ProductsAdminPage({
 
     <p className="text-muted text-sm" role="status">{total === 0 ? "Aucun produit ne correspond." : <>{from}–{to} sur <strong className="text-text">{total}</strong> produits{q || kind || status ? " (filtrés)" : ""}</>}</p>
 
-    {!products?.length ? <EmptyAdmin>Aucun produit ou accès non autorisé.</EmptyAdmin> : <div className="space-y-3">{products.map((product) => <Card key={product.id}><CardContent className="pt-6"><details><summary className="flex cursor-pointer items-center justify-between gap-4"><span className="min-w-0"><strong className="text-text">{product.model}</strong><span className="text-muted ml-2 font-mono text-xs">{product.kind} · {product.review_status}</span></span><span className="text-muted shrink-0 text-xs">{product.is_published ? "En ligne" : "Hors ligne"}</span></summary><div className="mt-6"><ProductForm product={product} /><form action={archiveProduct} className="mt-4 border-t pt-4"><input type="hidden" name="id" value={product.id} /><Button variant="destructive" size="sm"><Archive className="size-4" />Archiver</Button></form></div></details></CardContent></Card>)}</div>}
+    {!products?.length ? <EmptyAdmin>Aucun produit ou accès non autorisé.</EmptyAdmin> : <div className="space-y-2">{products.map((product) => <Card key={product.id}><CardContent className="py-4"><div className="flex items-center justify-between gap-4"><div className="min-w-0"><Link href={`/admin/produkte/${product.id}`} className="text-text hover:text-accent font-semibold transition-colors">{product.model}</Link><span className="text-muted ml-2 font-mono text-xs">{product.kind} · {product.review_status}</span></div><div className="flex shrink-0 items-center gap-2"><span className="text-muted text-xs">{product.is_published ? "Online" : "Offline"}</span><Button asChild size="sm" variant="secondary"><Link href={`/admin/produkte/${product.id}`}><Pencil className="size-3.5" />Bearbeiten</Link></Button></div></div></CardContent></Card>)}</div>}
 
     {lastPage > 1 && <nav aria-label="Pagination" className="flex items-center justify-between gap-4">
       {page > 1 ? <Button asChild variant="secondary"><Link href={pageHref({ q, kind, status }, page - 1)}>Précédent</Link></Button> : <span />}

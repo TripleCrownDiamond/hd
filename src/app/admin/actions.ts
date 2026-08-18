@@ -34,13 +34,23 @@ const productSchema = z.object({
   kind: z.enum(["stove", "wood", "log", "pellet", "briquette", "kindling", "coal", "accessory"]),
   subtitle: optionalText,
   short_description: optionalText,
+  long_description: optionalText,
   price_cents_public: z.coerce.number().int().nonnegative().nullable(),
-  // What the price buys, and the unit its Grundpreis is quoted in.
   quantity_amount: z.coerce.number().positive().nullable(),
   quantity_unit: z.enum(["kg", "t", "srm", "rm", "fm", "l", "stk"]).nullable(),
   base_price_unit: z.enum(["kg", "100kg", "t", "srm", "rm", "fm", "l", "stk"]).nullable(),
   review_status: z.enum(["pending", "approved", "rejected", "superseded"]),
   is_published: z.boolean(),
+  // Stove-specific technical fields.
+  power_kw_nominal: z.coerce.number().positive().nullable().optional(),
+  efficiency_pct: z.coerce.number().min(0).max(100).nullable().optional(),
+  energy_class: optionalText,
+  fuel: optionalText,
+  flue_diameter_mm: z.coerce.number().positive().nullable().optional(),
+  height_mm: z.coerce.number().positive().nullable().optional(),
+  width_mm: z.coerce.number().positive().nullable().optional(),
+  depth_mm: z.coerce.number().positive().nullable().optional(),
+  weight_kg: z.coerce.number().positive().nullable().optional(),
 });
 
 export async function saveProduct(formData: FormData) {
@@ -48,15 +58,29 @@ export async function saveProduct(formData: FormData) {
   const priceRaw = String(formData.get("price_cents_public") ?? "").trim();
   // A German decimal comma is what an admin types into a quantity field.
   const quantityRaw = String(formData.get("quantity_amount") ?? "").trim().replace(",", ".");
+  const numOrNull = (name: string) => {
+    const raw = String(formData.get(name) ?? "").trim().replace(",", ".");
+    return raw ? Number(raw) : null;
+  };
   const input = productSchema.parse({
     id: formData.get("id") || undefined,
     slug: formData.get("slug"), model: formData.get("model"), kind: formData.get("kind"),
     subtitle: formData.get("subtitle"), short_description: formData.get("short_description"),
+    long_description: formData.get("long_description"),
     price_cents_public: priceRaw ? Number(priceRaw) : null,
     quantity_amount: quantityRaw ? Number(quantityRaw) : null,
     quantity_unit: formData.get("quantity_unit") || null,
     base_price_unit: formData.get("base_price_unit") || null,
     review_status: formData.get("review_status"), is_published: formData.get("is_published") === "on",
+    power_kw_nominal: numOrNull("power_kw_nominal"),
+    efficiency_pct: numOrNull("efficiency_pct"),
+    energy_class: formData.get("energy_class"),
+    fuel: formData.get("fuel"),
+    flue_diameter_mm: numOrNull("flue_diameter_mm"),
+    height_mm: numOrNull("height_mm"),
+    width_mm: numOrNull("width_mm"),
+    depth_mm: numOrNull("depth_mm"),
+    weight_kg: numOrNull("weight_kg"),
   });
   const { id, ...values } = input;
   // A quantity without its unit yields no Grundpreis, so store neither: a
@@ -69,15 +93,26 @@ export async function saveProduct(formData: FormData) {
     base_price_unit: hasQuantity ? values.base_price_unit : null,
     is_published: values.is_published && values.review_status === "approved",
     quote_mode: values.price_cents_public == null,
+    // Only set stove fields when the kind is stove; clear them otherwise.
+    power_kw_nominal: values.kind === "stove" ? (values.power_kw_nominal ?? null) : null,
+    efficiency_pct: values.kind === "stove" ? (values.efficiency_pct ?? null) : null,
+    energy_class: values.kind === "stove" ? (values.energy_class ?? null) : null,
+    fuel: values.kind === "stove" ? (values.fuel ?? null) : null,
+    flue_diameter_mm: values.kind === "stove" ? (values.flue_diameter_mm ?? null) : null,
+    height_mm: values.kind === "stove" ? (values.height_mm ?? null) : null,
+    width_mm: values.kind === "stove" ? (values.width_mm ?? null) : null,
+    depth_mm: values.kind === "stove" ? (values.depth_mm ?? null) : null,
+    weight_kg: values.kind === "stove" ? (values.weight_kg ?? null) : null,
   };
   const supabase = await getMigrationAwareServerSupabase();
   const query = id
     ? supabase.from("products").update(safeValues).eq("id", id).select("id").single()
     : supabase.from("products").insert(safeValues).select("id").single();
   const { data, error } = await query;
-  if (error) throw new Error("Le produit n'a pas pu être enregistré.");
+  if (error || !data) throw new Error("Le produit n'a pas pu être enregistré.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "product.update" : "product.create", entity: "product", entityId: data.id });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
+  if (id) revalidatePath(`/admin/produkte/${id}`);
 }
 
 export async function archiveProduct(formData: FormData) {
@@ -88,6 +123,59 @@ export async function archiveProduct(formData: FormData) {
   if (error) throw new Error("Le produit n'a pas pu être archivé.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "product.archive", entity: "product", entityId: id });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
+}
+
+export async function deleteProduct(formData: FormData) {
+  const actor = await requireAdminAccess(["admin"]);
+  const id = idSchema.parse(formData.get("id"));
+  const supabase = await getMigrationAwareServerSupabase();
+  // Delete media and documents first (foreign key cascade may or may not exist).
+  await supabase.from("product_media").delete().eq("product_id", id);
+  await supabase.from("product_documents").delete().eq("product_id", id);
+  await supabase.from("product_variants").delete().eq("product_id", id);
+  const { error } = await supabase.from("products").delete().eq("id", id);
+  if (error) throw new Error("Le produit n'a pas pu être supprimé.");
+  await auditAdminAction({ ...actor, actorId: actor.userId, action: "product.delete", entity: "product", entityId: id });
+  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
+}
+
+/** Delete a single product_media row. */
+export async function deleteProductImage(formData: FormData) {
+  const actor = await requireAdminAccess(["admin", "content_editor"]);
+  const imageId = z.string().uuid().parse(formData.get("image_id"));
+  const productId = z.string().uuid().parse(formData.get("product_id"));
+  const supabase = await getMigrationAwareServerSupabase();
+  const { error } = await supabase.from("product_media").delete().eq("id", imageId);
+  if (error) throw new Error("L'image n'a pas pu être supprimée.");
+  await auditAdminAction({ ...actor, actorId: actor.userId, action: "product.image_delete", entity: "product_media", entityId: imageId });
+  revalidatePath(`/admin/produkte/${productId}`);
+}
+
+/** Move an image one position up or down. */
+export async function reorderProductImage(formData: FormData) {
+  const actor = await requireAdminAccess(["admin", "content_editor"]);
+  const imageId = z.string().uuid().parse(formData.get("image_id"));
+  const productId = z.string().uuid().parse(formData.get("product_id"));
+  const direction = z.enum(["up", "down"]).parse(formData.get("direction"));
+  const supabase = await getMigrationAwareServerSupabase();
+  // Fetch all images for this product ordered by position.
+  const { data: images } = await supabase
+    .from("product_media")
+    .select("id,position")
+    .eq("product_id", productId)
+    .order("position", { ascending: true });
+  if (!images || images.length < 2) return;
+  const idx = images.findIndex((img) => img.id === imageId);
+  if (idx === -1) return;
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= images.length) return;
+  // Swap positions.
+  const a = images[idx]!;
+  const b = images[swapIdx]!;
+  await supabase.from("product_media").update({ position: b.position }).eq("id", a.id);
+  await supabase.from("product_media").update({ position: a.position }).eq("id", b.id);
+  await auditAdminAction({ ...actor, actorId: actor.userId, action: "product.image_reorder", entity: "product_media", entityId: imageId });
+  revalidatePath(`/admin/produkte/${productId}`);
 }
 
 export async function updateOrder(formData: FormData) {
