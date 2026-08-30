@@ -78,7 +78,7 @@ export function Header({ sections }: { sections: MegaMenuSection[] }) {
                     <SheetClose asChild>
                       <Link
                         href={section.href}
-                        className="hover:bg-elevated flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-semibold"
+                        className="hover:bg-elevated flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm font-semibold"
                       >
                         <span className="text-text">{section.label}</span>
                         <span className="text-muted font-mono text-xs tabular-nums">
@@ -86,28 +86,27 @@ export function Header({ sections }: { sections: MegaMenuSection[] }) {
                         </span>
                       </Link>
                     </SheetClose>
-                    {section.columns.map((column) => (
-                      <ul key={column.title} className="mt-1 mb-2 space-y-0.5 pl-3">
-                        <li className="text-muted px-3 py-1 text-xs font-semibold tracking-wider uppercase">
-                          {column.title}
-                        </li>
-                        {column.links.map((link) => (
-                          <li key={link.href}>
-                            <SheetClose asChild>
-                              <Link
-                                href={link.href}
-                                className="text-muted hover:bg-elevated hover:text-text flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm transition-colors"
-                              >
-                                <span className="truncate">{link.label}</span>
-                                <span className="shrink-0 font-mono text-xs tabular-nums">
-                                  {link.count}
-                                </span>
-                              </Link>
-                            </SheetClose>
-                          </li>
-                        ))}
+                    {section.columns.length > 0 && (
+                      <ul className="mt-0.5 mb-1 space-y-0.5 pl-3">
+                        {section.columns.map((column) =>
+                          column.links.map((link) => (
+                            <li key={link.href}>
+                              <SheetClose asChild>
+                                <Link
+                                  href={link.href}
+                                  className="text-muted hover:bg-elevated hover:text-text flex items-center justify-between gap-3 rounded-md px-3 py-1.5 text-sm transition-colors"
+                                >
+                                  <span className="truncate">{link.label}</span>
+                                  <span className="shrink-0 font-mono text-xs tabular-nums">
+                                    {link.count}
+                                  </span>
+                                </Link>
+                              </SheetClose>
+                            </li>
+                          ))
+                        )}
                       </ul>
-                    ))}
+                    )}
                   </li>
                 ))}
                 {staticNav.map((item) => (

@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import { getPublicSupabase, getServiceSupabase } from "@/lib/db/server";
-import type { ProductRow, BrandRow, ProductMediaRow } from "@/lib/db/types";
+import type { ProductRow, BrandRow } from "@/lib/db/types";
 
 /**
  * Data behind the header mega menu.
@@ -22,20 +22,13 @@ export interface MegaMenuColumn {
   links: MegaMenuLink[];
 }
 
-export interface MegaMenuTeaser {
-  name: string;
-  brand: string | null;
-  href: string;
-  image: string | null;
-  priceCents: number | null;
-}
+
 
 export interface MegaMenuSection {
   label: string;
   href: string;
   count: number;
   columns: MegaMenuColumn[];
-  teasers: MegaMenuTeaser[];
 }
 
 type Kind =
@@ -127,7 +120,6 @@ async function buildMegaMenu(): Promise<MegaMenuSection[]> {
     ((brandsResult.data ?? []) as BrandRow[]).map((brand) => [brand.id, brand.name]),
   );
 
-  const teaserIds = new Set<string>();
   const byKind = new Map<Kind, NavProduct[]>();
   for (const product of products) {
     const kind = product.kind as Kind;
@@ -137,135 +129,90 @@ async function buildMegaMenu(): Promise<MegaMenuSection[]> {
     byKind.set(kind, bucket);
   }
 
-  // Prefer products that state a price so the menu shows real offers, but keep
-  // model order within that: sorting by price alone would make the showcase the
-  // three most expensive items in the catalogue.
-  const showcase = (bucket: NavProduct[]) =>
-    [...bucket]
-      .sort((a, b) => {
-        const priced = Number(b.price_cents_public != null) - Number(a.price_cents_public != null);
-        return priced || a.model.localeCompare(b.model, "de-DE");
-      })
-      .slice(0, 3);
-
-  for (const [, bucket] of byKind) {
-    for (const product of showcase(bucket)) teaserIds.add(product.id);
-  }
-
-  const heroByProduct = await readHeroImages([...teaserIds], supabase);
-
-  const teasersFor = (bucket: NavProduct[]): MegaMenuTeaser[] =>
-    showcase(bucket)
-      .map((product) => ({
-        name: product.model,
-        brand: product.brand_id ? (brandName.get(product.brand_id) ?? null) : null,
-        href:
-          product.kind === "stove" ? `/kaminofen/${product.slug}` : `/produkt/${product.slug}`,
-        image: heroByProduct.get(product.id) ?? null,
-        priceCents: product.price_cents_public,
-      }));
-
   const stoves = byKind.get("stove") ?? [];
   const wood = byKind.get("wood") ?? [];
-
-  const sections: MegaMenuSection[] = [];
-
-  if (stoves.length > 0) {
-    sections.push({
-      label: "Kaminöfen",
-      href: "/kaminoefen",
-      count: stoves.length,
-      columns: [
-        {
-          title: "Nach Marke",
-          links: topFacets(
-            stoves,
-            (product) => (product.brand_id ? (brandName.get(product.brand_id) ?? null) : null),
-            (value) => `/kaminoefen?marke=${encodeURIComponent(value)}`,
-            6,
-          ),
-        },
-        {
-          title: "Nach Leistung",
-          links: topFacets(
-            stoves,
-            (product) => powerBand(product.power_kw_nominal),
-            (value) => `/kaminoefen?leistung=${encodeURIComponent(value)}`,
-            4,
-          ),
-        },
-      ],
-      teasers: teasersFor(stoves),
-    });
-  }
-
-  if (wood.length > 0) {
-    sections.push({
-      label: "Brennholz",
-      href: "/brennholz",
-      count: wood.length,
-      columns: [
-        {
-          title: "Nach Holzart",
-          links: topFacets(
-            wood,
-            (product) => extraString(product, "wood_type"),
-            (value) => `/brennholz?holzart=${encodeURIComponent(value)}`,
-            6,
-          ),
-        },
-        {
-          title: "Nach Länge",
-          links: topFacets(
-            wood,
-            (product) => extraString(product, "length_de"),
-            (value) => `/brennholz?laenge=${encodeURIComponent(value)}`,
-            4,
-          ),
-        },
-      ],
-      teasers: teasersFor(wood),
-    });
-  }
+  const heatingCount = stoves.length + wood.length;
 
   const fuelKinds: Array<{ kind: Kind; label: string }> = [
-    { kind: "log", label: "Stammholz & Meterholz" },
+    { kind: "log", label: "Stammholz" },
     { kind: "kindling", label: "Anzündholz" },
     { kind: "briquette", label: "Holzbriketts" },
     { kind: "pellet", label: "Holzpellets" },
-    { kind: "coal", label: "Kohle & Grillkohle" },
-    { kind: "accessory", label: "Zubehör" },
+    { kind: "coal", label: "Kohle" },
   ];
 
-  // Only categories that actually carry published products appear here: a
-  // menu link to an empty catalogue page is a dead end, and an admin can
-  // unpublish a whole category at once.
-  const remaining = fuelKinds
+  const fuelSections = fuelKinds
     .map(({ kind, label }) => ({ kind, label, items: byKind.get(kind) ?? [] }))
     .filter((entry) => entry.items.length > 0);
 
-  if (remaining.length > 0) {
-    const first = remaining[0]!;
+  const accessories = byKind.get("accessory") ?? [];
+
+  const sections: MegaMenuSection[] = [];
+
+  /* ── 1. Heizen — Kaminöfen + Brennholz ────────────────────────────── */
+  if (heatingCount > 0) {
     sections.push({
-      label: "Weitere Brennstoffe",
-      href: CATEGORY_ROUTE[first.kind],
-      count: remaining.reduce((sum, entry) => sum + entry.items.length, 0),
+      label: "Heizen",
+      href: "/brennholz",
+      count: heatingCount,
       columns: [
         {
-          title: "Sortiment",
-          links: remaining.map((entry) => ({
-            label: entry.label,
-            href: CATEGORY_ROUTE[entry.kind],
-            count: entry.items.length,
-          })),
+          title: "Kaminöfen",
+          links: [
+            { label: "Alle Kaminöfen", href: "/kaminoefen", count: stoves.length },
+            ...topFacets(
+              stoves,
+              (p) => (p.brand_id ? (brandName.get(p.brand_id) ?? null) : null),
+              (v) => `/kaminoefen?marke=${encodeURIComponent(v)}`,
+              4,
+            ),
+          ],
+        },
+        {
+          title: "Brennholz",
+          links: [
+            { label: "Alle Brennholz", href: "/brennholz", count: wood.length },
+            ...topFacets(
+              wood,
+              (p) => extraString(p, "wood_type"),
+              (v) => `/brennholz?holzart=${encodeURIComponent(v)}`,
+              4,
+            ),
+          ],
         },
       ],
-      teasers: teasersFor(remaining.flatMap((entry) => entry.items)),
     });
   }
 
-  // A genuinely empty catalogue must still show the full category list, not a
-  // sparse "Weitere Brennstoffe" section with two zero-count links.
+  /* ── 2. Brennstoffe — Pellets, Briketts, Kohle … ──────────────────── */
+  if (fuelSections.length > 0) {
+    sections.push({
+      label: "Brennstoffe",
+      href: CATEGORY_ROUTE[fuelSections[0]!.kind],
+      count: fuelSections.reduce((s, e) => s + e.items.length, 0),
+      columns: [
+        {
+          title: "Sortiment",
+          links: fuelSections.map((e) => ({
+            label: e.label,
+            href: CATEGORY_ROUTE[e.kind],
+            count: e.items.length,
+          })),
+        },
+      ],
+    });
+  }
+
+  /* ── 3. Zubehör — standalone link ──────────────────────────────────── */
+  if (accessories.length > 0) {
+    sections.push({
+      label: "Zubehör",
+      href: "/zubehoer",
+      count: accessories.length,
+      columns: [],
+    });
+  }
+
   return sections.some((section) => section.count > 0) ? sections : fallbackSections();
 }
 
@@ -277,23 +224,7 @@ function powerBand(kw: number | null): string | null {
   return "ab 10 kW";
 }
 
-async function readHeroImages(
-  productIds: string[],
-  supabase: ReturnType<typeof getSupabase>,
-): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
-  if (productIds.length === 0) return out;
-  const { data, error } = await supabase
-    .from("product_media")
-    .select("product_id,cloudinary_public_id,position")
-    .in("product_id", productIds)
-    .eq("position", 0);
-  if (error) return out;
-  for (const row of (data ?? []) as ProductMediaRow[]) {
-    if (!out.has(row.product_id)) out.set(row.product_id, row.cloudinary_public_id);
-  }
-  return out;
-}
+
 
 /** Category links only — used when the catalogue cannot be read. */
 function fallbackSections(): MegaMenuSection[] {
@@ -317,7 +248,6 @@ function fallbackSections(): MegaMenuSection[] {
           ],
         },
       ],
-      teasers: [],
     },
   ];
 }
