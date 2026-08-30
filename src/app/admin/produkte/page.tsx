@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AdminHeader, EmptyAdmin, Field, fieldClass, areaClass } from "@/components/admin/admin-ui";
 import { GrundpreisFields } from "@/components/admin/grundpreis-fields";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
+import { BulkActionsBar } from "@/components/admin/bulk-actions-bar";
 import type { BasePriceUnit, QuantityUnit } from "@/lib/utils";
 import { saveProduct } from "../actions";
 
@@ -116,7 +117,7 @@ export default async function ProductsAdminPage({
 
     <p className="text-muted text-sm" role="status">{total === 0 ? "Aucun produit ne correspond." : <>{from}–{to} sur <strong className="text-text">{total}</strong> produits{q || kind || status ? " (filtrés)" : ""}</>}</p>
 
-    {!products?.length ? <EmptyAdmin>Aucun produit ou accès non autorisé.</EmptyAdmin> : <div className="space-y-2">{products.map((product) => <Card key={product.id} className={product.is_published ? "" : "border-orange-300 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-950/30"}><CardContent className="py-4"><div className="flex items-center justify-between gap-4"><div className="min-w-0"><Link href={`/admin/produkte/${product.id}`} className="text-text hover:text-accent font-semibold transition-colors">{product.model}</Link><span className="text-muted ml-2 font-mono text-xs">{product.kind}</span></div><div className="flex shrink-0 items-center gap-2"><Badge variant={product.is_published ? "success" : "warning"} className="text-xs">{product.is_published ? "Online" : "Offline"}</Badge><Button asChild size="sm" variant="secondary"><Link href={`/admin/produkte/${product.id}`}><Pencil className="size-3.5" />Bearbeiten</Link></Button><DeleteProductButton productId={product.id} productName={product.model} /></div></div></CardContent></Card>)}</div>}
+    {!products?.length ? <EmptyAdmin>Aucun produit ou accès non autorisé.</EmptyAdmin> : <form className="space-y-2"><BulkActionsBar totalLabel={`${total} produits`} />{products.map((product) => <Card key={product.id} className={product.is_published ? "" : "border-orange-300 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-950/30"}><CardContent className="py-4"><div className="flex items-center justify-between gap-4"><div className="flex items-center gap-3 min-w-0"><input type="checkbox" name="pid" value={product.id} className="accent-accent size-4 shrink-0 cursor-pointer" /><Link href={`/admin/produkte/${product.id}`} className="text-text hover:text-accent font-semibold transition-colors">{product.model}</Link><span className="text-muted font-mono text-xs">{product.kind}</span></div><div className="flex shrink-0 items-center gap-2"><Badge variant={product.is_published ? "success" : "warning"} className="text-xs">{product.is_published ? "Online" : "Offline"}</Badge><Button asChild size="sm" variant="secondary"><Link href={`/admin/produkte/${product.id}`}><Pencil className="size-3.5" />Bearbeiten</Link></Button><DeleteProductButton productId={product.id} productName={product.model} /></div></div></CardContent></Card>)}</form>}
 
     {lastPage > 1 && <nav aria-label="Pagination" className="flex items-center justify-between gap-4">
       {page > 1 ? <Button asChild variant="secondary"><Link href={pageHref({ q, kind, status, published }, page - 1)}>Précédent</Link></Button> : <span />}

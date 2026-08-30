@@ -139,6 +139,35 @@ export async function deleteProduct(formData: FormData) {
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
 }
 
+/** Delete multiple products at once (bulk action from the admin list). */
+export async function deleteProducts(formData: FormData) {
+  const actor = await requireAdminAccess(["admin"]);
+  const raw = formData.get("ids");
+  if (!raw || typeof raw !== "string") throw new Error("Aucun produit sélectionné.");
+  const ids = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (ids.length === 0) throw new Error("Aucun produit sélectionné.");
+  if (ids.length > 200) throw new Error("Trop de produits sélectionnés (max 200).");
+  // Validate every ID is a UUID.
+  for (const id of ids) idSchema.parse(id);
+
+  const supabase = await getMigrationAwareServerSupabase();
+  // Delete children first (foreign key cascade may or may not exist).
+  await supabase.from("product_media").delete().in("product_id", ids);
+  await supabase.from("product_documents").delete().in("product_id", ids);
+  await supabase.from("product_variants").delete().in("product_id", ids);
+  const { error } = await supabase.from("products").delete().in("id", ids);
+  if (error) throw new Error("Les produits n'ont pas pu être supprimés.");
+  await auditAdminAction({
+    ...actor, actorId: actor.userId,
+    action: "product.bulk_delete", entity: "product",
+    metadata: { count: ids.length },
+  });
+  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
+}
+
 /** Delete a single product_media row. */
 export async function deleteProductImage(formData: FormData) {
   const actor = await requireAdminAccess(["admin", "content_editor"]);
