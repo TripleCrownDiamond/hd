@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Pencil,
   Archive,
-  Trash2,
   ExternalLink,
 } from "lucide-react";
 import { getMigrationAwareServerSupabase } from "@/lib/db/server";
@@ -20,7 +19,8 @@ import {
 import { GrundpreisFields } from "@/components/admin/grundpreis-fields";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { ProductImageGallery } from "@/components/admin/product-image-gallery";
-import { saveProduct, archiveProduct, deleteProduct } from "../../actions";
+import { saveProduct, archiveProduct } from "../../actions";
+import { DeleteProductButton } from "@/components/admin/delete-product-button";
 import type { BasePriceUnit, QuantityUnit } from "@/lib/utils";
 
 const KINDS: Array<[string, string]> = [
@@ -446,20 +446,7 @@ export default async function ProductDetailPage({
             Archivieren
           </Button>
         </form>
-        <form
-          action={deleteProduct}
-          onSubmit={(e) => {
-            if (!window.confirm("Produkt wirklich löschen? Dies kann nicht rückgängig gemacht werden.")) {
-              e.preventDefault();
-            }
-          }}
-        >
-          <input type="hidden" name="id" value={product.id} />
-          <Button variant="destructive" type="submit">
-            <Trash2 className="size-4" />
-            Löschen
-          </Button>
-        </form>
+        <DeleteProductButton productId={product.id} productName={product.model} />
         <Button asChild variant="ghost">
           <Link href="/admin/produkte">
             <ArrowLeft className="size-4" />

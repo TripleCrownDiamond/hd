@@ -3,8 +3,10 @@ import { Pencil, Plus, Search } from "lucide-react";
 import { getMigrationAwareServerSupabase } from "@/lib/db/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { AdminHeader, EmptyAdmin, Field, fieldClass, areaClass } from "@/components/admin/admin-ui";
 import { GrundpreisFields } from "@/components/admin/grundpreis-fields";
+import { DeleteProductButton } from "@/components/admin/delete-product-button";
 import type { BasePriceUnit, QuantityUnit } from "@/lib/utils";
 import { saveProduct } from "../actions";
 
@@ -25,6 +27,10 @@ const KINDS = [
 const STATUSES = [
   ["pending", "En attente"], ["approved", "Approuvé"],
   ["rejected", "Rejeté"], ["superseded", "Archivé"],
+] as const;
+
+const PUBLISHED = [
+  ["1", "En ligne"], ["0", "Hors ligne"],
 ] as const;
 
 function ProductForm({ product }: { product?: Record<string, unknown> }) {
@@ -48,11 +54,12 @@ function ProductForm({ product }: { product?: Record<string, unknown> }) {
 }
 
 /** Keeps the active filter while moving between pages. */
-function pageHref(params: { q: string; kind: string; status: string }, page: number): string {
+function pageHref(params: { q: string; kind: string; status: string; published: string }, page: number): string {
   const query = new URLSearchParams();
   if (params.q) query.set("q", params.q);
   if (params.kind) query.set("kind", params.kind);
   if (params.status) query.set("status", params.status);
+  if (params.published) query.set("published", params.published);
   if (page > 1) query.set("page", String(page));
   const suffix = query.toString();
   return suffix ? `/admin/produkte?${suffix}` : "/admin/produkte";
@@ -71,6 +78,7 @@ export default async function ProductsAdminPage({
   const q = one("q");
   const kind = KINDS.some(([value]) => value === one("kind")) ? one("kind") : "";
   const status = STATUSES.some(([value]) => value === one("status")) ? one("status") : "";
+  const published = PUBLISHED.some(([value]) => value === one("published")) ? one("published") : "";
   const page = Math.max(1, Number.parseInt(one("page"), 10) || 1);
 
   const supabase = await getMigrationAwareServerSupabase();
@@ -86,6 +94,8 @@ export default async function ProductsAdminPage({
   if (q) query = query.or(`model.ilike.%${q}%,slug.ilike.%${q}%`);
   if (kind) query = query.eq("kind", kind);
   if (status) query = query.eq("review_status", status);
+  if (published === "1") query = query.eq("is_published", true);
+  if (published === "0") query = query.eq("is_published", false);
 
   const { data: products, count } = await query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
   const total = count ?? 0;
@@ -96,21 +106,22 @@ export default async function ProductsAdminPage({
   return <div className="space-y-8"><AdminHeader eyebrow="Catalogue" title="Produits" description="Créer, modifier, publier ou archiver des produits avec traçabilité complète." />
     <Card><CardContent className="pt-6"><details><summary className="text-text flex cursor-pointer items-center gap-2 font-semibold"><Plus className="size-4" />Nouveau produit</summary><div className="mt-6"><ProductForm /></div></details></CardContent></Card>
 
-    <Card><CardContent className="pt-6"><form className="grid gap-4 md:grid-cols-[2fr_1fr_1fr_auto] md:items-end">
+    <Card><CardContent className="pt-6"><form className="grid gap-4 md:grid-cols-[2fr_1fr_1fr_1fr_auto] md:items-end">
       <Field label="Rechercher"><input name="q" defaultValue={q} placeholder="Nom du modèle ou slug" className={fieldClass} /></Field>
       <Field label="Type"><select name="kind" defaultValue={kind} className={fieldClass}><option value="">Tous les types</option>{KINDS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
       <Field label="Statut"><select name="status" defaultValue={status} className={fieldClass}><option value="">Tous les statuts</option>{STATUSES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
+      <Field label="Visibilité"><select name="published" defaultValue={published} className={fieldClass}><option value="">Tous</option>{PUBLISHED.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
       <Button type="submit"><Search className="size-4" />Filtrer</Button>
     </form></CardContent></Card>
 
     <p className="text-muted text-sm" role="status">{total === 0 ? "Aucun produit ne correspond." : <>{from}–{to} sur <strong className="text-text">{total}</strong> produits{q || kind || status ? " (filtrés)" : ""}</>}</p>
 
-    {!products?.length ? <EmptyAdmin>Aucun produit ou accès non autorisé.</EmptyAdmin> : <div className="space-y-2">{products.map((product) => <Card key={product.id}><CardContent className="py-4"><div className="flex items-center justify-between gap-4"><div className="min-w-0"><Link href={`/admin/produkte/${product.id}`} className="text-text hover:text-accent font-semibold transition-colors">{product.model}</Link><span className="text-muted ml-2 font-mono text-xs">{product.kind} · {product.review_status}</span></div><div className="flex shrink-0 items-center gap-2"><span className="text-muted text-xs">{product.is_published ? "Online" : "Offline"}</span><Button asChild size="sm" variant="secondary"><Link href={`/admin/produkte/${product.id}`}><Pencil className="size-3.5" />Bearbeiten</Link></Button></div></div></CardContent></Card>)}</div>}
+    {!products?.length ? <EmptyAdmin>Aucun produit ou accès non autorisé.</EmptyAdmin> : <div className="space-y-2">{products.map((product) => <Card key={product.id} className={product.is_published ? "" : "border-orange-300 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-950/30"}><CardContent className="py-4"><div className="flex items-center justify-between gap-4"><div className="min-w-0"><Link href={`/admin/produkte/${product.id}`} className="text-text hover:text-accent font-semibold transition-colors">{product.model}</Link><span className="text-muted ml-2 font-mono text-xs">{product.kind}</span></div><div className="flex shrink-0 items-center gap-2"><Badge variant={product.is_published ? "success" : "warning"} className="text-xs">{product.is_published ? "Online" : "Offline"}</Badge><Button asChild size="sm" variant="secondary"><Link href={`/admin/produkte/${product.id}`}><Pencil className="size-3.5" />Bearbeiten</Link></Button><DeleteProductButton productId={product.id} productName={product.model} /></div></div></CardContent></Card>)}</div>}
 
     {lastPage > 1 && <nav aria-label="Pagination" className="flex items-center justify-between gap-4">
-      {page > 1 ? <Button asChild variant="secondary"><Link href={pageHref({ q, kind, status }, page - 1)}>Précédent</Link></Button> : <span />}
+      {page > 1 ? <Button asChild variant="secondary"><Link href={pageHref({ q, kind, status, published }, page - 1)}>Précédent</Link></Button> : <span />}
       <span className="text-muted text-sm">Page {page} sur {lastPage}</span>
-      {page < lastPage ? <Button asChild variant="secondary"><Link href={pageHref({ q, kind, status }, page + 1)}>Suivant</Link></Button> : <span />}
+      {page < lastPage ? <Button asChild variant="secondary"><Link href={pageHref({ q, kind, status, published }, page + 1)}>Suivant</Link></Button> : <span />}
     </nav>}
   </div>;
 }
