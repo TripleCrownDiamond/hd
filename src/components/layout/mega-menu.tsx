@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -11,6 +12,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
+import { media } from "@/lib/media";
 import type { MegaMenuSection } from "@/lib/products/navigation";
 
 /** Links that are pages in their own right, not catalogue facets. */
@@ -53,6 +55,45 @@ export function MegaMenu({ sections }: { sections: MegaMenuSection[] }) {
                         </div>
                       ))}
                     </div>
+                    {section.teasers.length > 0 && (
+                      <div className="border-border ml-4 flex shrink-0 flex-col gap-3 border-l pl-4">
+                        {section.teasers.map((teaser) => (
+                          <Link
+                            key={teaser.href}
+                            href={teaser.href}
+                            className="group flex items-center gap-3 rounded-md transition-colors hover:bg-elevated"
+                          >
+                            {teaser.image && (
+                              <div className="relative size-16 shrink-0 overflow-hidden rounded-md bg-muted">
+                                <Image
+                                  src={media(teaser.image, { width: 128, height: 128, crop: "fit" })}
+                                  alt={teaser.name}
+                                  fill
+                                  sizes="64px"
+                                  className="object-cover"
+                                  unoptimized
+                                />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              {teaser.brand && (
+                                <p className="text-muted text-[10px] font-semibold uppercase tracking-wider">
+                                  {teaser.brand}
+                                </p>
+                              )}
+                              <p className="text-text truncate text-sm font-medium">
+                                {teaser.name}
+                              </p>
+                              {teaser.priceCents != null && (
+                                <p className="text-accent font-mono text-xs tabular-nums">
+                                  {(teaser.priceCents / 100).toFixed(2)} €
+                                </p>
+                              )}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </NavigationMenuContent>
               </>

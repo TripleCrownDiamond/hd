@@ -2,7 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import { getPublicSupabase, getServiceSupabase } from "@/lib/db/server";
-import type { ProductRow, BrandRow } from "@/lib/db/types";
+import type { ProductRow, BrandRow, ProductMediaRow } from "@/lib/db/types";
 
 /**
  * Data behind the header mega menu.
@@ -22,13 +22,20 @@ export interface MegaMenuColumn {
   links: MegaMenuLink[];
 }
 
-
+export interface MegaMenuTeaser {
+  name: string;
+  brand: string | null;
+  href: string;
+  image: string | null;
+  priceCents: number | null;
+}
 
 export interface MegaMenuSection {
   label: string;
   href: string;
   count: number;
   columns: MegaMenuColumn[];
+  teasers: MegaMenuTeaser[];
 }
 
 type Kind =
@@ -129,6 +136,32 @@ async function buildMegaMenu(): Promise<MegaMenuSection[]> {
     byKind.set(kind, bucket);
   }
 
+  // Pick the top 2 priced products per kind for menu teasers
+  const showcase = (bucket: NavProduct[]) =>
+    [...bucket]
+      .sort((a, b) => {
+        const priced = Number(b.price_cents_public != null) - Number(a.price_cents_public != null);
+        return priced || a.model.localeCompare(b.model, "de-DE");
+      })
+      .slice(0, 2);
+
+  const teaserIds = new Set<string>();
+  for (const [, bucket] of byKind) {
+    for (const product of showcase(bucket)) teaserIds.add(product.id);
+  }
+  const heroByProduct = await readHeroImages([...teaserIds], supabase);
+
+  const teasersFor = (bucket: NavProduct[]): MegaMenuTeaser[] =>
+    showcase(bucket)
+      .map((product) => ({
+        name: product.model,
+        brand: product.brand_id ? (brandName.get(product.brand_id) ?? null) : null,
+        href:
+          product.kind === "stove" ? `/kaminofen/${product.slug}` : `/produkt/${product.slug}`,
+        image: heroByProduct.get(product.id) ?? null,
+        priceCents: product.price_cents_public,
+      }));
+
   const stoves = byKind.get("stove") ?? [];
   const wood = byKind.get("wood") ?? [];
   const heatingCount = stoves.length + wood.length;
@@ -181,6 +214,7 @@ async function buildMegaMenu(): Promise<MegaMenuSection[]> {
           ],
         },
       ],
+      teasers: teasersFor(stoves),
     });
   }
 
@@ -200,6 +234,7 @@ async function buildMegaMenu(): Promise<MegaMenuSection[]> {
           })),
         },
       ],
+      teasers: teasersFor(wood),
     });
   }
 
@@ -210,6 +245,7 @@ async function buildMegaMenu(): Promise<MegaMenuSection[]> {
       href: "/zubehoer",
       count: accessories.length,
       columns: [],
+      teasers: [],
     });
   }
 
@@ -225,6 +261,23 @@ function powerBand(kw: number | null): string | null {
 }
 
 
+async function readHeroImages(
+  productIds: string[],
+  supabase: ReturnType<typeof getSupabase>,
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (productIds.length === 0) return out;
+  const { data, error } = await supabase
+    .from("product_media")
+    .select("product_id,cloudinary_public_id,position")
+    .in("product_id", productIds)
+    .eq("position", 0);
+  if (error) return out;
+  for (const row of (data ?? []) as ProductMediaRow[]) {
+    if (!out.has(row.product_id)) out.set(row.product_id, row.cloudinary_public_id);
+  }
+  return out;
+}
 
 /** Category links only — used when the catalogue cannot be read. */
 function fallbackSections(): MegaMenuSection[] {
@@ -248,6 +301,7 @@ function fallbackSections(): MegaMenuSection[] {
           ],
         },
       ],
+      teasers: [],
     },
   ];
 }
