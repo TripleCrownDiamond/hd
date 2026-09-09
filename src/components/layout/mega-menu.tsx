@@ -20,7 +20,7 @@ const STATIC_LINKS = [{ label: "Liefergebiet", href: "/liefergebiet" }] as const
 
 export function MegaMenu({ sections }: { sections: MegaMenuSection[] }) {
   return (
-    <NavigationMenu className="hidden flex-none justify-start xl:flex">
+    <NavigationMenu className="hidden xl:flex xl:flex-1 xl:justify-center">
       <NavigationMenuList>
         {sections.map((section) => (
           <NavigationMenuItem key={section.label}>
