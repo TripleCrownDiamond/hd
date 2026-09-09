@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Newsreader, Manrope, IBM_Plex_Mono } from "next/font/google";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import { Header } from "@/components/layout/header";
+import { NavigationProgress } from "@/components/layout/navigation-progress";
 import { Footer } from "@/components/layout/footer";
 import { CartProvider } from "@/lib/cart/cart-store";
 import { ShortlistProvider } from "@/lib/shortlists/shortlist-store";
@@ -64,6 +66,10 @@ export default async function RootLayout({
         <CartProvider>
           <DeliveryProvider>
           <ShortlistProvider>
+          {/* Reads searchParams, so it must not force the whole tree dynamic. */}
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
           <a href="#main-content" className="skip-link">
             Zum Hauptinhalt springen
           </a>
