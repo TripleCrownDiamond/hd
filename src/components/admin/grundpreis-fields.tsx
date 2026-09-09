@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Field, fieldClass } from "@/components/admin/admin-ui";
 import {
   BASE_PRICE_UNIT_LABEL,
+  centsToEuroInput,
   computeBasePriceCents,
   formatBasePrice,
   formatPrice,
@@ -41,14 +42,19 @@ export function GrundpreisFields({
   quantityUnit: QuantityUnit | null;
   basePriceUnit: BasePriceUnit | null;
 }) {
-  const [price, setPrice] = useState(priceCents == null ? "" : String(priceCents));
+  const [price, setPrice] = useState(centsToEuroInput(priceCents));
   const [amount, setAmount] = useState(quantityAmount == null ? "" : String(quantityAmount));
   const [unit, setUnit] = useState<string>(quantityUnit ?? "");
   const [baseUnit, setBaseUnit] = useState<string>(basePriceUnit ?? "t");
 
   const parsedAmount = Number(amount.replace(",", "."));
+  // The field holds euros; everything downstream reasons in cents. Parsed
+  // leniently here because this only feeds the live preview — `parseEuroInput`
+  // on the server is what actually validates the submission.
+  const parsedEuros = Number(price.replace(/\s/g, "").replace(",", "."));
+  const priceInCents = Number.isFinite(parsedEuros) ? Math.round(parsedEuros * 100) : 0;
   const basePrice = computeBasePriceCents(
-    Number(price),
+    priceInCents,
     Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : null,
     (unit || null) as QuantityUnit | null,
     (baseUnit || null) as BasePriceUnit | null,
@@ -56,11 +62,11 @@ export function GrundpreisFields({
 
   return (
     <>
-      <Field label="Prix en centimes" hint="Laisser vide pour un devis sur demande">
+      <Field label="Prix de vente (€)" hint="TTC, par ex. 799,95 — laisser vide pour un devis sur demande">
         <input
-          name="price_cents_public"
-          type="number"
-          min="0"
+          name="price_public_euros"
+          inputMode="decimal"
+          placeholder="799,95"
           value={price}
           onChange={(event) => setPrice(event.target.value)}
           className={fieldClass}
@@ -119,7 +125,7 @@ export function GrundpreisFields({
               {formatBasePrice(basePrice, BASE_PRICE_UNIT_LABEL[baseUnit as BasePriceUnit])}
             </strong>{" "}
             <span className="text-xs">
-              ({formatPrice(Number(price))} pour {amount} {unit})
+              ({formatPrice(priceInCents)} pour {amount} {unit})
             </span>
           </>
         ) : (

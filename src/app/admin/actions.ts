@@ -9,6 +9,7 @@ import { issueInvoiceForOrder, issueStandaloneInvoice } from "@/lib/invoices/iss
 import { invalidateShortcodeCache } from "@/lib/content/shortcodes";
 import { LEGAL_DEFAULTS } from "@/lib/legal/defaults";
 import { invalidateCatalogCache } from "@/lib/products/catalog";
+import { parseEuroInput } from "@/lib/utils";
 import { adminInbox, sendEmail, verifyEmailTransport } from "@/lib/notifications/email";
 import { notifyStatusChange } from "@/lib/notifications/orders";
 import { BRAND_NAME } from "@/lib/brand";
@@ -55,7 +56,8 @@ const productSchema = z.object({
 
 export async function saveProduct(formData: FormData) {
   const actor = await requireAdminAccess(["admin", "content_editor"]);
-  const priceRaw = String(formData.get("price_cents_public") ?? "").trim();
+  // The form collects euros ("799,95"); the column stores integer cents.
+  const priceCents = parseEuroInput(String(formData.get("price_public_euros") ?? ""));
   // A German decimal comma is what an admin types into a quantity field.
   const quantityRaw = String(formData.get("quantity_amount") ?? "").trim().replace(",", ".");
   const numOrNull = (name: string) => {
@@ -67,7 +69,7 @@ export async function saveProduct(formData: FormData) {
     slug: formData.get("slug"), model: formData.get("model"), kind: formData.get("kind"),
     subtitle: formData.get("subtitle"), short_description: formData.get("short_description"),
     long_description: formData.get("long_description"),
-    price_cents_public: priceRaw ? Number(priceRaw) : null,
+    price_cents_public: priceCents,
     quantity_amount: quantityRaw ? Number(quantityRaw) : null,
     quantity_unit: formData.get("quantity_unit") || null,
     base_price_unit: formData.get("base_price_unit") || null,
@@ -163,6 +165,38 @@ export async function deleteProducts(formData: FormData) {
   await auditAdminAction({
     ...actor, actorId: actor.userId,
     action: "product.bulk_delete", entity: "product",
+    metadata: { count: ids.length },
+  });
+  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
+}
+
+/**
+ * Publish or unpublish a selection in one go. Toggling visibility used to mean
+ * opening each product in turn, which is why a mis-imported batch could sit
+ * live on the shop for as long as it took to click through it.
+ */
+export async function setProductsPublished(formData: FormData) {
+  const actor = await requireAdminAccess(["admin", "content_editor"]);
+  const raw = formData.get("ids");
+  if (!raw || typeof raw !== "string") throw new Error("Aucun produit sélectionné.");
+  const published = formData.get("published") === "1";
+  const ids = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (ids.length === 0) throw new Error("Aucun produit sélectionné.");
+  if (ids.length > 200) throw new Error("Trop de produits sélectionnés (max 200).");
+  for (const id of ids) idSchema.parse(id);
+
+  const supabase = await getMigrationAwareServerSupabase();
+  const { error } = await supabase
+    .from("products")
+    .update({ is_published: published })
+    .in("id", ids);
+  if (error) throw new Error("La visibilité n'a pas pu être modifiée.");
+  await auditAdminAction({
+    ...actor, actorId: actor.userId,
+    action: published ? "product.bulk_publish" : "product.bulk_unpublish", entity: "product",
     metadata: { count: ids.length },
   });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
@@ -537,15 +571,21 @@ const promotionSchema = z.object({
 export async function savePromotion(formData: FormData) {
   const actor = await requireAdminAccess(["admin"]);
   const nullableNumber = (name: string) => String(formData.get(name) ?? "").trim() || null;
+  // Thresholds are typed in euros and stored in cents.
+  const minimumCents = parseEuroInput(String(formData.get("minimum_subtotal_euros") ?? "")) ?? 0;
+  const maximumCents = parseEuroInput(String(formData.get("maximum_discount_euros") ?? ""));
   const input = promotionSchema.parse({
     id: formData.get("id") || undefined,
     code: formData.get("code"), name: formData.get("name"), description: formData.get("description"),
-    discount_type: formData.get("discount_type"), discount_value: formData.get("discount_value"),
-    scope: formData.get("scope"), minimum_subtotal_cents: formData.get("minimum_subtotal_cents") || 0,
-    maximum_discount_cents: nullableNumber("maximum_discount_cents"), usage_limit: nullableNumber("usage_limit"),
+    discount_type: formData.get("discount_type"),
+    discount_value: String(formData.get("discount_value") ?? "").trim().replace(",", "."),
+    scope: formData.get("scope"), minimum_subtotal_cents: minimumCents,
+    maximum_discount_cents: maximumCents, usage_limit: nullableNumber("usage_limit"),
     starts_at: formData.get("starts_at"), ends_at: formData.get("ends_at"), is_active: formData.get("is_active") === "on",
   });
-  const storedValue = input.discount_type === "percentage" ? Math.round(input.discount_value * 100) : Math.round(input.discount_value);
+  // Both scales are hundredths of their unit: 10 % is stored as 1 000 basis
+  // points, 10 € as 1 000 cents. Same arithmetic, so one branch covers both.
+  const storedValue = Math.round(input.discount_value * 100);
   if (input.discount_type === "percentage" && storedValue > 10_000) throw new Error("La remise en pourcentage ne peut pas dépasser 100 %.");
   const { id, ...rest } = input;
   const supabase = await getMigrationAwareServerSupabase();

@@ -3,20 +3,23 @@ import { getMigrationAwareServerSupabase } from "@/lib/db/server";
 import { AdminHeader, EmptyAdmin, Field, fieldClass, areaClass } from "@/components/admin/admin-ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { centsToEuroInput } from "@/lib/utils";
 import { archivePromotion, savePromotion } from "../actions";
 
 function PromotionForm({ promotion, products, categories, selectedProducts, selectedCategories }: { promotion?: Record<string, unknown>; products: { id: string; model: string }[]; categories: { id: string; name: string }[]; selectedProducts: Set<string>; selectedCategories: Set<string> }) {
   const type = String(promotion?.discount_type ?? "percentage");
-  const value = Number(promotion?.discount_value ?? 1000) / (type === "percentage" ? 100 : 1);
+  // Stored as hundredths either way — basis points for a percentage, cents for
+  // a fixed amount — so both display as the value the admin originally typed.
+  const value = Number(promotion?.discount_value ?? 1000) / 100;
   return <form action={savePromotion} className="grid gap-4 md:grid-cols-2">
     {promotion?.id ? <input type="hidden" name="id" value={String(promotion.id)} /> : null}
     <Field label="Code"><input className={fieldClass} name="code" required defaultValue={String(promotion?.code ?? "")} placeholder="HIVER10" /></Field>
     <Field label="Nom interne"><input className={fieldClass} name="name" required defaultValue={String(promotion?.name ?? "")} /></Field>
-    <Field label="Type de remise"><select className={fieldClass} name="discount_type" defaultValue={type}><option value="percentage">Pourcentage</option><option value="fixed">Montant fixe (centimes)</option></select></Field>
-    <Field label="Valeur" hint="Pourcentage (ex. 10) ou centimes"><input className={fieldClass} name="discount_value" type="number" min="0.01" step="0.01" defaultValue={value} required /></Field>
+    <Field label="Type de remise"><select className={fieldClass} name="discount_type" defaultValue={type}><option value="percentage">Pourcentage</option><option value="fixed">Montant fixe (€)</option></select></Field>
+    <Field label="Valeur" hint="Pourcentage (ex. 10) ou montant en euros (ex. 15,50)"><input className={fieldClass} name="discount_value" inputMode="decimal" defaultValue={value} required /></Field>
     <Field label="Périmètre"><select className={fieldClass} name="scope" defaultValue={String(promotion?.scope ?? "all")}><option value="all">Tout le catalogue</option><option value="products">Produits sélectionnés</option><option value="categories">Catégories sélectionnées</option></select></Field>
-    <Field label="Montant minimum d'achat (centimes)"><input className={fieldClass} name="minimum_subtotal_cents" type="number" min="0" defaultValue={Number(promotion?.minimum_subtotal_cents ?? 0)} /></Field>
-    <Field label="Remise maximale (centimes)"><input className={fieldClass} name="maximum_discount_cents" type="number" min="1" defaultValue={promotion?.maximum_discount_cents == null ? "" : Number(promotion.maximum_discount_cents)} /></Field>
+    <Field label="Montant minimum d'achat (€)" hint="0 pour aucun minimum"><input className={fieldClass} name="minimum_subtotal_euros" inputMode="decimal" placeholder="50,00" defaultValue={centsToEuroInput(Number(promotion?.minimum_subtotal_cents ?? 0))} /></Field>
+    <Field label="Remise maximale (€)" hint="Vide pour aucun plafond"><input className={fieldClass} name="maximum_discount_euros" inputMode="decimal" placeholder="100,00" defaultValue={centsToEuroInput(promotion?.maximum_discount_cents == null ? null : Number(promotion.maximum_discount_cents))} /></Field>
     <Field label="Limite d'utilisation"><input className={fieldClass} name="usage_limit" type="number" min="1" defaultValue={promotion?.usage_limit == null ? "" : Number(promotion.usage_limit)} /></Field>
     <Field label="Début"><input className={fieldClass} name="starts_at" type="datetime-local" defaultValue={promotion?.starts_at ? String(promotion.starts_at).slice(0,16) : ""} /></Field>
     <Field label="Fin"><input className={fieldClass} name="ends_at" type="datetime-local" defaultValue={promotion?.ends_at ? String(promotion.ends_at).slice(0,16) : ""} /></Field>

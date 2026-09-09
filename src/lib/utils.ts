@@ -118,3 +118,33 @@ export function computeBasePriceCents(
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+/**
+ * Parse a price an admin typed in euros into integer cents.
+ *
+ * The admin form used to ask for cents outright, so publishing a 799,95 €
+ * stove meant typing 79995 and a single slip put a product on the shop at a
+ * hundred times its price. Accepts both separators ("79,95" and "79.95") and
+ * ignores spaces used as thousands grouping.
+ *
+ * Multiplying by 100 in binary floating point is not exact — 79.95 * 100 is
+ * 7994.999999999999 — so the result is rounded rather than truncated.
+ *
+ * @returns cents, or null for empty input (meaning "quote on request")
+ * @throws if the text is not a non-negative number
+ */
+export function parseEuroInput(raw: string): number | null {
+  const text = raw.trim().replace(/\s/g, "").replace(",", ".");
+  if (!text) return null;
+  const value = Number(text);
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error("Le prix doit être un nombre positif, par exemple 799,95.");
+  }
+  return Math.round(value * 100);
+}
+
+/** Cents to a plain editable euro string ("79995" -> "799.95"). */
+export function centsToEuroInput(cents: number | null | undefined): string {
+  if (cents == null) return "";
+  return (cents / 100).toFixed(2);
+}

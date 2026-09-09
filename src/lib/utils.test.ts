@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
+  centsToEuroInput,
   cn,
   computeBasePriceCents,
+  parseEuroInput,
   formatPrice,
   formatBasePrice,
   normalizeGermanNumbers,
@@ -114,5 +116,56 @@ describe("computeBasePriceCents", () => {
     expect(computeBasePriceCents(44900, 990, "kg", null)).toBeNull();
     expect(computeBasePriceCents(0, 990, "kg", "t")).toBeNull();
     expect(computeBasePriceCents(44900, 0, "kg", "t")).toBeNull();
+  });
+});
+
+describe("parseEuroInput", () => {
+  it("converts a plain euro amount to cents", () => {
+    expect(parseEuroInput("799.95")).toBe(79995);
+  });
+
+  it("accepts the German decimal comma", () => {
+    expect(parseEuroInput("799,95")).toBe(79995);
+  });
+
+  it("rounds rather than truncates the binary float", () => {
+    // 79.95 * 100 is 7994.999999999999 in IEEE 754; truncation would bill 79,94 €.
+    expect(parseEuroInput("79,95")).toBe(7995);
+    expect(parseEuroInput("1234,56")).toBe(123456);
+  });
+
+  it("ignores spaces used to group thousands", () => {
+    expect(parseEuroInput("1 234,50")).toBe(123450);
+  });
+
+  it("treats whole euros as such", () => {
+    expect(parseEuroInput("800")).toBe(80000);
+  });
+
+  it("returns null for empty input, meaning quote on request", () => {
+    expect(parseEuroInput("")).toBeNull();
+    expect(parseEuroInput("   ")).toBeNull();
+  });
+
+  it("rejects text and negative amounts", () => {
+    expect(() => parseEuroInput("gratuit")).toThrow();
+    expect(() => parseEuroInput("-5")).toThrow();
+  });
+});
+
+describe("centsToEuroInput", () => {
+  it("renders cents as an editable euro string", () => {
+    expect(centsToEuroInput(79995)).toBe("799.95");
+    expect(centsToEuroInput(80000)).toBe("800.00");
+  });
+
+  it("renders an empty string for no price", () => {
+    expect(centsToEuroInput(null)).toBe("");
+  });
+
+  it("round-trips through parseEuroInput", () => {
+    for (const cents of [1, 999, 7995, 79995, 123456]) {
+      expect(parseEuroInput(centsToEuroInput(cents))).toBe(cents);
+    }
   });
 });
