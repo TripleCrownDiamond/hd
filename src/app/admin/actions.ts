@@ -25,6 +25,22 @@ import {
   PLACEHOLDER_IBAN,
 } from "@/lib/payments/config";
 
+/**
+ * Drop the cached storefront pages after a catalogue change.
+ *
+ * The public pages are ISR (`revalidate = 300`), so without this an edit would
+ * take up to five minutes to surface. `revalidateTag("catalog")` cannot do the
+ * job on its own: the catalogue is read through an in-process map rather than a
+ * tagged `fetch`, so no route is registered against that tag. The `[slug]`
+ * entries are revalidated as route patterns, which covers every product without
+ * having to enumerate them.
+ */
+function revalidateStorefront(): void {
+  revalidatePath("/");
+  revalidatePath("/produkt/[slug]", "page");
+  revalidatePath("/kaminofen/[slug]", "page");
+}
+
 const optionalText = z.string().trim().transform((value) => value || null);
 const idSchema = z.string().uuid();
 
@@ -113,7 +129,7 @@ export async function saveProduct(formData: FormData) {
   const { data, error } = await query;
   if (error || !data) throw new Error("Le produit n'a pas pu être enregistré.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "product.update" : "product.create", entity: "product", entityId: data.id });
-  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
+  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
   if (id) revalidatePath(`/admin/produkte/${id}`);
 }
 
@@ -124,7 +140,7 @@ export async function archiveProduct(formData: FormData) {
   const { error } = await supabase.from("products").update({ is_published: false, review_status: "superseded" }).eq("id", id);
   if (error) throw new Error("Le produit n'a pas pu être archivé.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "product.archive", entity: "product", entityId: id });
-  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
+  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
 }
 
 export async function deleteProduct(formData: FormData) {
@@ -138,7 +154,7 @@ export async function deleteProduct(formData: FormData) {
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw new Error("Le produit n'a pas pu être supprimé.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "product.delete", entity: "product", entityId: id });
-  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
+  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
 }
 
 /** Delete multiple products at once (bulk action from the admin list). */
@@ -167,7 +183,7 @@ export async function deleteProducts(formData: FormData) {
     action: "product.bulk_delete", entity: "product",
     metadata: { count: ids.length },
   });
-  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
+  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
 }
 
 /**
@@ -199,7 +215,7 @@ export async function setProductsPublished(formData: FormData) {
     action: published ? "product.bulk_publish" : "product.bulk_unpublish", entity: "product",
     metadata: { count: ids.length },
   });
-  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte");
+  invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
 }
 
 /** Delete a single product_media row. */
@@ -329,7 +345,11 @@ export async function saveContent(formData: FormData) {
   const { data, error } = await query;
   if (error) throw new Error("Le contenu n'a pas pu être enregistré.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "content.update" : "content.create", entity: "content", entityId: data.id });
+  // The guide index and its article pages are ISR, so they need dropping too —
+  // both are rendered from content_entries.
   revalidatePath("/admin/inhalte"); revalidatePath(`/${values.slug}`);
+  revalidatePath("/ratgeber"); revalidatePath("/ratgeber/[slug]", "page");
+  revalidatePath("/");
 }
 
 /**

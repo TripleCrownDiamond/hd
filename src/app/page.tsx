@@ -37,7 +37,15 @@ import { getShopReviews, summarise, type Review } from "@/lib/reviews/reviews";
 import { getLatestArticles, type ArticleSummary } from "@/lib/content/articles";
 import { getMigrationAwarePublicSupabase } from "@/lib/db/server";
 
-export const dynamic = "force-dynamic";
+/**
+ * Rendered once and reused for five minutes, matching the catalogue's own
+ * in-process cache TTL. `force-dynamic` here re-rendered the whole page on
+ * every single visit — and because the memory cache is per worker, a cold
+ * start re-read the catalogue from Supabase before it could answer at all.
+ * Admin edits do not wait for the window: the product actions revalidate
+ * these paths explicitly.
+ */
+export const revalidate = 300;
 
 function Holzschnitt() {
   return (
