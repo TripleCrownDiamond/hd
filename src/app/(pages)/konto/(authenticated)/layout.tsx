@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { NavLink } from "@/components/layout/nav-link";
 import { getMigrationAwareServerSupabase } from "@/lib/db/server";
 
 // Only routes that exist today. Bestellungen/Adressen/Einstellungen pages are
 // not built yet; pointing the menu at them would render a 404.
 const accountNav = [
-  { label: "Übersicht", href: "/konto" },
+  { label: "Übersicht", href: "/konto", exact: true },
   { label: "Merkliste", href: "/konto/favoriten" },
 ];
 
@@ -42,12 +43,15 @@ export default async function AuthenticatedAccountLayout({ children }: { childre
             <ul className="flex flex-row gap-1 overflow-x-auto md:flex-col md:overflow-visible">
               {accountNav.map((item) => (
                 <li key={item.href}>
-                  <Link
+                  <NavLink
                     href={item.href}
-                    className="block whitespace-nowrap rounded-md px-3 py-2 text-sm text-muted transition-colors hover:bg-elevated hover:text-text focus-visible:bg-elevated focus-visible:text-text"
+                    exact={item.exact}
+                    className="block whitespace-nowrap rounded-md px-3 py-2 text-sm transition-colors"
+                    activeClassName="bg-brand/10 font-semibold text-brand"
+                    inactiveClassName="text-muted hover:bg-elevated hover:text-text focus-visible:bg-elevated focus-visible:text-text"
                   >
                     {item.label}
-                  </Link>
+                  </NavLink>
                 </li>
               ))}
               {admin ? (

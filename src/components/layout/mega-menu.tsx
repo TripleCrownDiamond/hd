@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -11,6 +12,7 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { isActivePath } from "@/components/layout/nav-link";
 import { cn } from "@/lib/utils";
 import { media } from "@/lib/media";
 import type { MegaMenuSection } from "@/lib/products/navigation";
@@ -18,7 +20,15 @@ import type { MegaMenuSection } from "@/lib/products/navigation";
 /** Links that are pages in their own right, not catalogue facets. */
 const STATIC_LINKS = [{ label: "Liefergebiet", href: "/liefergebiet" }] as const;
 
+/**
+ * Marks the section you are browsing. Everything here is `text-muted` by
+ * default, so without this the header gives no clue which of five destinations
+ * you are currently on.
+ */
+const ACTIVE_TRIGGER = "text-text font-semibold";
+
 export function MegaMenu({ sections }: { sections: MegaMenuSection[] }) {
+  const pathname = usePathname() ?? "";
   return (
     <NavigationMenu className="hidden xl:flex xl:flex-1 xl:justify-center">
       <NavigationMenuList>
@@ -26,7 +36,11 @@ export function MegaMenu({ sections }: { sections: MegaMenuSection[] }) {
           <NavigationMenuItem key={section.label}>
             {section.columns.length > 0 ? (
               <>
-                <NavigationMenuTrigger>{section.label}</NavigationMenuTrigger>
+                <NavigationMenuTrigger
+                  className={cn(isActivePath(pathname, section.href) && ACTIVE_TRIGGER)}
+                >
+                  {section.label}
+                </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="flex gap-8 p-6">
                     <div className="flex gap-6">
@@ -98,8 +112,19 @@ export function MegaMenu({ sections }: { sections: MegaMenuSection[] }) {
                 </NavigationMenuContent>
               </>
             ) : (
-              <NavigationMenuLink asChild className={cn(navigationMenuTriggerStyle)}>
-                <Link href={section.href}>{section.label}</Link>
+              <NavigationMenuLink
+                asChild
+                className={cn(
+                  navigationMenuTriggerStyle,
+                  isActivePath(pathname, section.href) && ACTIVE_TRIGGER,
+                )}
+              >
+                <Link
+                  href={section.href}
+                  aria-current={isActivePath(pathname, section.href) ? "page" : undefined}
+                >
+                  {section.label}
+                </Link>
               </NavigationMenuLink>
             )}
           </NavigationMenuItem>
@@ -107,8 +132,19 @@ export function MegaMenu({ sections }: { sections: MegaMenuSection[] }) {
 
         {STATIC_LINKS.map((link) => (
           <NavigationMenuItem key={link.href}>
-            <NavigationMenuLink asChild className={cn(navigationMenuTriggerStyle)}>
-              <Link href={link.href}>{link.label}</Link>
+            <NavigationMenuLink
+              asChild
+              className={cn(
+                navigationMenuTriggerStyle,
+                isActivePath(pathname, link.href) && ACTIVE_TRIGGER,
+              )}
+            >
+              <Link
+                href={link.href}
+                aria-current={isActivePath(pathname, link.href) ? "page" : undefined}
+              >
+                {link.label}
+              </Link>
             </NavigationMenuLink>
           </NavigationMenuItem>
         ))}
