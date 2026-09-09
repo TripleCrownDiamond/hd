@@ -153,7 +153,7 @@ export function ImageUploader({ productId, onUploaded }: ImageUploaderProps) {
                   }}
                 >
                   <X className="size-4" />
-                  Abbrechen
+                  Annuler
                 </Button>
               </div>
             </div>

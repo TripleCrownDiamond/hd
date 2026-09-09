@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Pencil, Plus, Search } from "lucide-react";
+import Image from "next/image";
+import { ImageOff, Pencil, Plus } from "lucide-react";
 import { getMigrationAwareServerSupabase } from "@/lib/db/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +9,10 @@ import { AdminHeader, EmptyAdmin, Field, fieldClass, areaClass } from "@/compone
 import { GrundpreisFields } from "@/components/admin/grundpreis-fields";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
 import { BulkActionsBar } from "@/components/admin/bulk-actions-bar";
-import type { BasePriceUnit, QuantityUnit } from "@/lib/utils";
+import { SearchField } from "@/components/admin/search-field";
+import { FilterSelect } from "@/components/admin/filter-select";
+import { media } from "@/lib/media";
+import { formatPrice, type BasePriceUnit, type QuantityUnit } from "@/lib/utils";
 import { saveProduct } from "../actions";
 
 /**
@@ -18,6 +22,9 @@ import { saveProduct } from "../actions";
  * narrows the set server-side, and the pager walks whatever is left.
  */
 const PAGE_SIZE = 100;
+
+/** Thumbnail edge in CSS pixels; requested from the CDN at 2x for retina. */
+const THUMB = 56;
 
 const KINDS = [
   ["wood", "Bois de chauffage"], ["log", "Grumes & bois au mètre"], ["kindling", "Allume-feu"],
@@ -33,6 +40,8 @@ const STATUSES = [
 const PUBLISHED = [
   ["1", "En ligne"], ["0", "Hors ligne"],
 ] as const;
+
+const KIND_LABEL = new Map<string, string>(KINDS.map(([value, label]) => [value, label]));
 
 function ProductForm({ product }: { product?: Record<string, unknown> }) {
   return <form action={saveProduct} className="grid gap-4 md:grid-cols-2">
@@ -104,20 +113,80 @@ export default async function ProductsAdminPage({
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);
 
+  /**
+   * Hero images for this page only, in one round trip. `position: 0` is the
+   * main shot — the same one the storefront card shows, so what the admin
+   * recognises here is what a customer sees.
+   */
+  const ids = (products ?? []).map((product) => product.id as string);
+  const { data: heroRows } = ids.length
+    ? await supabase
+        .from("product_media")
+        .select("product_id,cloudinary_public_id")
+        .in("product_id", ids)
+        .eq("kind", "image")
+        .eq("position", 0)
+    : { data: [] };
+  const heroById = new Map(
+    (heroRows ?? []).map((row) => [row.product_id as string, row.cloudinary_public_id as string]),
+  );
+
+  const filtered = Boolean(q || kind || status || published);
+
   return <div className="space-y-8"><AdminHeader eyebrow="Catalogue" title="Produits" description="Créer, modifier, publier ou archiver des produits avec traçabilité complète." />
     <Card><CardContent className="pt-6"><details><summary className="text-text flex cursor-pointer items-center gap-2 font-semibold"><Plus className="size-4" />Nouveau produit</summary><div className="mt-6"><ProductForm /></div></details></CardContent></Card>
 
-    <Card><CardContent className="pt-6"><form className="grid gap-4 md:grid-cols-[2fr_1fr_1fr_1fr_auto] md:items-end">
-      <Field label="Rechercher"><input name="q" defaultValue={q} placeholder="Nom du modèle ou slug" className={fieldClass} /></Field>
-      <Field label="Type"><select name="kind" defaultValue={kind} className={fieldClass}><option value="">Tous les types</option>{KINDS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
-      <Field label="Statut"><select name="status" defaultValue={status} className={fieldClass}><option value="">Tous les statuts</option>{STATUSES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
-      <Field label="Visibilité"><select name="published" defaultValue={published} className={fieldClass}><option value="">Tous</option>{PUBLISHED.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
-      <Button type="submit"><Search className="size-4" />Filtrer</Button>
-    </form></CardContent></Card>
+    <Card><CardContent className="grid gap-4 pt-6 md:grid-cols-[2fr_1fr_1fr_1fr] md:items-start">
+      <SearchField label="Rechercher" placeholder="Nom du modèle ou slug…" />
+      <FilterSelect name="kind" label="Type" value={kind} options={KINDS} allLabel="Tous les types" />
+      <FilterSelect name="status" label="Statut" value={status} options={STATUSES} allLabel="Tous les statuts" />
+      <FilterSelect name="published" label="Visibilité" value={published} options={PUBLISHED} allLabel="Tous" />
+    </CardContent></Card>
 
-    <p className="text-muted text-sm" role="status">{total === 0 ? "Aucun produit ne correspond." : <>{from}–{to} sur <strong className="text-text">{total}</strong> produits{q || kind || status ? " (filtrés)" : ""}</>}</p>
+    <p className="text-muted text-sm" role="status" aria-live="polite">{total === 0 ? "Aucun produit ne correspond." : <>{from}–{to} sur <strong className="text-text">{total}</strong> produits{filtered ? " (filtrés)" : ""}</>}</p>
 
-    {!products?.length ? <EmptyAdmin>Aucun produit ou accès non autorisé.</EmptyAdmin> : <form className="space-y-2"><BulkActionsBar totalLabel={`${total} produits`} />{products.map((product) => <Card key={product.id} className={product.is_published ? "" : "border-orange-300 bg-orange-50/50 dark:border-orange-700 dark:bg-orange-950/30"}><CardContent className="py-4"><div className="flex items-center justify-between gap-4"><div className="flex items-center gap-3 min-w-0"><input type="checkbox" name="pid" value={product.id} className="accent-accent size-4 shrink-0 cursor-pointer" /><Link href={`/admin/produkte/${product.id}`} className="text-text hover:text-accent font-semibold transition-colors">{product.model}</Link><span className="text-muted font-mono text-xs">{product.kind}</span></div><div className="flex shrink-0 items-center gap-2"><Badge variant={product.is_published ? "success" : "warning"} className="text-xs">{product.is_published ? "Online" : "Offline"}</Badge><Button asChild size="sm" variant="secondary"><Link href={`/admin/produkte/${product.id}`}><Pencil className="size-3.5" />Bearbeiten</Link></Button><DeleteProductButton productId={product.id} productName={product.model} /></div></div></CardContent></Card>)}</form>}
+    {!products?.length ? <EmptyAdmin>Aucun produit ou accès non autorisé.</EmptyAdmin> : <form className="space-y-2">
+      <BulkActionsBar totalLabel={`${total} produits au total`} />
+      {products.map((product) => {
+        const heroId = heroById.get(product.id as string);
+        const price = product.price_cents_public == null ? null : Number(product.price_cents_public);
+        return <Card
+          key={product.id}
+          // Unpublished rows are tinted with the same `warning` token the badge
+          // uses, instead of the raw orange-50/orange-950 pair that ignored the
+          // palette and read as a different product in dark mode.
+          className={product.is_published ? "" : "border-warning/40 bg-warning/5"}
+        ><CardContent className="py-3">
+          <div className="flex items-center gap-3">
+            <input type="checkbox" name="pid" value={product.id} aria-label={`Sélectionner ${product.model}`} className="accent-accent size-4 shrink-0 cursor-pointer" />
+
+            <Link href={`/admin/produkte/${product.id}`} tabIndex={-1} aria-hidden="true" className="border-border bg-elevated relative size-14 shrink-0 overflow-hidden rounded-md border">
+              {heroId ? (
+                <Image src={media(heroId, { width: THUMB * 2, height: THUMB * 2, crop: "fill" })} alt="" fill sizes={`${THUMB}px`} className="object-cover" />
+              ) : (
+                <span className="text-muted flex size-full items-center justify-center"><ImageOff className="size-5" /></span>
+              )}
+            </Link>
+
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <Link href={`/admin/produkte/${product.id}`} className="text-text hover:text-accent truncate font-semibold transition-colors">{product.model}</Link>
+              <p className="text-muted flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                <span>{KIND_LABEL.get(String(product.kind)) ?? String(product.kind)}</span>
+                <span aria-hidden="true">·</span>
+                <span className="font-mono tabular-nums">{price == null ? "Sur devis" : formatPrice(price)}</span>
+                {!heroId ? <><span aria-hidden="true">·</span><span className="text-warning">Sans image</span></> : null}
+              </p>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge variant={product.is_published ? "success" : "warning"} className="text-xs">{product.is_published ? "En ligne" : "Hors ligne"}</Badge>
+              <Button asChild size="sm" variant="secondary"><Link href={`/admin/produkte/${product.id}`}><Pencil className="size-3.5" />Modifier</Link></Button>
+              <DeleteProductButton productId={product.id} productName={product.model} />
+            </div>
+          </div>
+        </CardContent></Card>;
+      })}
+    </form>}
 
     {lastPage > 1 && <nav aria-label="Pagination" className="flex items-center justify-between gap-4">
       {page > 1 ? <Button asChild variant="secondary"><Link href={pageHref({ q, kind, status, published }, page - 1)}>Précédent</Link></Button> : <span />}

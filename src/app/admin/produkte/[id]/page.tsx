@@ -97,7 +97,7 @@ export default async function ProductDetailPage({
       {/* Status badges */}
       <div className="flex flex-wrap gap-2">
         <Badge variant={product.is_published ? "success" : "default"}>
-          {product.is_published ? "Online" : "Offline"}
+          {product.is_published ? "En ligne" : "Hors ligne"}
         </Badge>
         <Badge
           variant={
@@ -410,15 +410,15 @@ export default async function ProductDetailPage({
               <dd className="text-text font-mono text-xs">{product.id}</dd>
             </div>
             <div>
-              <dt className="text-muted">Erstellt</dt>
+              <dt className="text-muted">Créé le</dt>
               <dd className="text-text">
-                {new Date(product.created_at).toLocaleDateString("de-DE")}
+                {new Date(product.created_at).toLocaleDateString("fr-FR")}
               </dd>
             </div>
             <div>
-              <dt className="text-muted">Aktualisiert</dt>
+              <dt className="text-muted">Mis à jour le</dt>
               <dd className="text-text">
-                {new Date(product.updated_at).toLocaleDateString("de-DE")}
+                {new Date(product.updated_at).toLocaleDateString("fr-FR")}
               </dd>
             </div>
             <div>
@@ -450,7 +450,7 @@ export default async function ProductDetailPage({
         <Button asChild variant="ghost">
           <Link href="/admin/produkte">
             <ArrowLeft className="size-4" />
-            Zurück zur Übersicht
+            Retour à la liste
           </Link>
         </Button>
       </div>
