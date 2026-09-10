@@ -58,11 +58,14 @@ const productSchema = z.object({
   base_price_unit: z.enum(["kg", "100kg", "t", "srm", "rm", "fm", "l", "stk"]).nullable(),
   review_status: z.enum(["pending", "approved", "rejected", "superseded"]),
   is_published: z.boolean(),
-  // Stove-specific technical fields.
+  // Stove-specific technical fields. Nullable too: the edit form only renders
+  // them for stove products, so saving a wood/pellet/accessory product submits
+  // an absent field — `formData.get()` returns null and a strict string schema
+  // would turn the whole save into ZodError.
   power_kw_nominal: z.coerce.number().positive().nullable().optional(),
   efficiency_pct: z.coerce.number().min(0).max(100).nullable().optional(),
-  energy_class: optionalText,
-  fuel: optionalText,
+  energy_class: optionalText.nullable().optional(),
+  fuel: optionalText.nullable().optional(),
   flue_diameter_mm: z.coerce.number().positive().nullable().optional(),
   height_mm: z.coerce.number().positive().nullable().optional(),
   width_mm: z.coerce.number().positive().nullable().optional(),

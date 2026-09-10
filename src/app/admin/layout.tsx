@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   BadgePercent,
+  FileCode2,
   FileText,
   LayoutDashboard,
   MessageCircleQuestion,
@@ -31,6 +32,7 @@ const adminNav = [
   { label: "Pages & Articles", href: "/admin/inhalte", icon: Newspaper },
   { label: "Avis", href: "/admin/bewertungen", icon: Star },
   { label: "Paiements", href: "/admin/zahlungen", icon: Wallet },
+  { label: "Feed marchand", href: "/admin/feed", icon: FileCode2 },
   { label: "Réglages", href: "/admin/einstellungen", icon: Settings },
 ];
 
