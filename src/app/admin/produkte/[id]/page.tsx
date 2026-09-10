@@ -43,10 +43,15 @@ const STATUSES: Array<[string, string]> = [
 
 export default async function ProductDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const query = searchParams ? await searchParams : undefined;
+  const notice = typeof query?.notice === "string" ? query.notice : null;
+  const error = typeof query?.error === "string" ? query.error : null;
   const supabase = await getMigrationAwareServerSupabase();
 
   const { data: product } = await supabase
@@ -93,6 +98,25 @@ export default async function ProductDetailPage({
           </div>
         }
       />
+
+      {/* Save feedback: the action redirects back here with a query param so
+          an edit is never a silent no-op. */}
+      {notice === "saved" ? (
+        <div
+          role="status"
+          className="border-success/30 bg-success/10 text-success rounded-md border px-4 py-3 text-sm"
+        >
+          Produit enregistré.
+        </div>
+      ) : null}
+      {error === "1" ? (
+        <div
+          role="alert"
+          className="border-danger/20 bg-danger/5 text-danger rounded-md border px-4 py-3 text-sm"
+        >
+          Le produit n&apos;a pas pu être enregistré.
+        </div>
+      ) : null}
 
       {/* Status badges */}
       <div className="flex flex-wrap gap-2">

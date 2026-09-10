@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdminAccess, auditAdminAction } from "@/lib/auth/admin";
 import { getMigrationAwareServerSupabase } from "@/lib/db/server";
@@ -126,14 +127,33 @@ export async function saveProduct(formData: FormData) {
     weight_kg: values.kind === "stove" ? (values.weight_kg ?? null) : null,
   };
   const supabase = await getMigrationAwareServerSupabase();
-  const query = id
-    ? supabase.from("products").update(safeValues).eq("id", id).select("id").single()
-    : supabase.from("products").insert(safeValues).select("id").single();
-  const { data, error } = await query;
-  if (error || !data) throw new Error("Le produit n'a pas pu être enregistré.");
-  await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "product.update" : "product.create", entity: "product", entityId: data.id });
+  const run = (payload: Record<string, unknown>) =>
+    id
+      ? supabase.from("products").update(payload).eq("id", id).select("id").single()
+      : supabase.from("products").insert(payload).select("id").single();
+
+  let { data, error } = await run(safeValues);
+  if (error && (error as { code?: string }).code === "42703") {
+    // A database that hasn't run the sales-unit migration answers its new
+    // columns with 42703 and would otherwise lose every edit on the form.
+    // Drop those columns and save the rest, just like the settings save.
+    const reduced = { ...safeValues };
+    for (const column of ["quantity_amount", "quantity_unit", "base_price_unit"] as const) {
+      delete (reduced as Record<string, unknown>)[column];
+    }
+    ({ data, error } = await run(reduced));
+  }
+  // Fail visibly instead of leaving the admin on a page that looks untouched:
+  // a bare throw would drop the whole edit on the Next error screen.
+  if (error || !data) redirect(`/admin/produkte${id ? `/${id}` : ""}?error=1`);
+  const savedId = data.id as string;
+  await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "product.update" : "product.create", entity: "product", entityId: savedId });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
   if (id) revalidatePath(`/admin/produkte/${id}`);
+  // Land back on the product page with a confirmation in the URL so the save
+  // is unmistakable — otherwise the form re-renders with identical values and
+  // "nothing seems to have happened".
+  redirect(`/admin/produkte/${savedId}?notice=saved`);
 }
 
 export async function archiveProduct(formData: FormData) {
