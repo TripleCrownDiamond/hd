@@ -8,13 +8,19 @@ import {
   type PaymentSettingsRow,
 } from "@/lib/payments/config";
 import { savePaymentSettings } from "../actions";
+import { AdminNotice, readFeedback } from "@/components/admin/admin-notice";
 
 export const dynamic = "force-dynamic";
 
 const CARD_PROVIDERS = ["stripe", "mollie", "adyen"];
 const CRYPTO_PROVIDERS = ["btcpay", "coinbase", "bitpay"];
 
-export default async function PaymentSettingsAdminPage() {
+export default async function PaymentSettingsAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { notice, error } = readFeedback(await searchParams);
   const supabase = await getMigrationAwareServerSupabase();
   const { data } = await supabase.from("payment_settings").select("*").eq("id", 1).maybeSingle();
   const settings = (data as PaymentSettingsRow | null) ?? null;
@@ -27,6 +33,8 @@ export default async function PaymentSettingsAdminPage() {
         title="Moyens de paiement"
         description="Seules les méthodes activées et entièrement configurées apparaissent à la caisse. Les clés secrètes (Stripe Secret Key, BTCPay API Key) appartiennent à l’environnement serveur, pas ici."
       />
+
+      <AdminNotice notice={notice} error={error} />
 
       {settings &&
         isPlaceholderBankData({

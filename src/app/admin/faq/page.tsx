@@ -4,6 +4,7 @@ import { AdminHeader, EmptyAdmin, Field, fieldClass, areaClass } from "@/compone
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { archiveFaq, saveFaq } from "../actions";
+import { AdminNotice, readFeedback } from "@/components/admin/admin-notice";
 
 function FaqForm({ entry, products }: { entry?: Record<string, unknown>; products: { id: string; model: string }[] }) {
   return <form action={saveFaq} className="grid gap-4 md:grid-cols-2">{entry?.id ? <input type="hidden" name="id" value={String(entry.id)} /> : null}
@@ -17,10 +18,16 @@ function FaqForm({ entry, products }: { entry?: Record<string, unknown>; product
   </form>;
 }
 
-export default async function FaqAdminPage() {
+export default async function FaqAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { notice, error } = readFeedback(await searchParams);
   const supabase = await getMigrationAwareServerSupabase(); const [{ data: entries }, { data: products }] = await Promise.all([supabase.from("faq_entries").select("*").order("position"), supabase.from("products").select("id,model").eq("is_published", true).order("model")]);
   const p = (products ?? []) as { id: string; model: string }[];
   return <div className="space-y-8"><AdminHeader eyebrow="Connaissances" title="FAQ & base de connaissances du chat" description="Seules les réponses publiées sont utilisées dans la boutique et comme contexte sourcé pour l'assistant." />
+    <AdminNotice notice={notice} error={error} />
     <Card><CardContent className="pt-6"><details><summary className="cursor-pointer font-semibold">Nouvelle question</summary><div className="mt-6"><FaqForm products={p} /></div></details></CardContent></Card>
     {!entries?.length ? <EmptyAdmin>Aucune entrée FAQ pour le moment.</EmptyAdmin> : entries.map((entry) => <Card key={entry.id}><CardContent className="pt-6"><details><summary className="flex cursor-pointer justify-between gap-4"><strong className="min-w-0">{entry.question}</strong><span className="text-muted shrink-0 text-sm">{entry.category} · {entry.status}</span></summary><div className="mt-6"><FaqForm entry={entry} products={p} /><form action={archiveFaq} className="mt-4"><input type="hidden" name="id" value={entry.id} /><Button variant="destructive" size="sm"><Archive className="size-4" />Archiver</Button></form></div></details></CardContent></Card>)}</div>;
 }

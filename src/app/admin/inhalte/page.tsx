@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AVAILABLE_SHORTCODES } from "@/lib/content/shortcodes";
 import { LEGAL_DEFAULTS } from "@/lib/legal/defaults";
 import { saveContent, seedLegalContent } from "../actions";
+import { AdminNotice, readFeedback } from "@/components/admin/admin-notice";
 
 const CONTENT_KINDS: Array<[string, string]> = [
   ["page", "Page"],
@@ -20,8 +21,14 @@ const CONTENT_STATUSES: Array<[string, string]> = [
   ["archived", "Archivé"],
 ];
 
-export default async function ContentAdminPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
-  const { edit } = await searchParams;
+export default async function ContentAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const edit = typeof params.edit === "string" ? params.edit : undefined;
+  const { notice, error } = readFeedback(params);
   const supabase = await getMigrationAwareServerSupabase();
   const [{ data: entries }, { data: selected }] = await Promise.all([
     supabase.from("content_entries").select("*").order("updated_at", { ascending: false }).limit(100),
@@ -32,6 +39,7 @@ export default async function ContentAdminPage({ searchParams }: { searchParams:
   const notSeeded = LEGAL_DEFAULTS.filter((entry) => !present.has(entry.slug));
 
   return <div className="space-y-8"><AdminHeader eyebrow="CMS" title="Pages & Articles" description="Modifier en Rich Text, Markdown ou HTML et prévisualiser dans un environnement isolé avant publication." />
+    <AdminNotice notice={notice} error={error} />
     {notSeeded.length > 0 ? <Card><CardContent className="pt-6">
       <h2 className="text-text font-display text-lg font-semibold">Reprendre les textes juridiques dans le CMS</h2>
       <p className="text-muted mt-2 max-w-3xl text-sm">Ces {notSeeded.length} pages sont actuellement servies depuis le code et ne sont pas modifiables ici. En les reprenant, elles sont créées en <strong>brouillon</strong> — rien ne part en ligne sans vérification. Les slugs existants restent intacts.</p>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ReviewRow } from "@/lib/db/types";
 import { saveReview, deleteReview } from "../actions";
+import { AdminNotice, readFeedback } from "@/components/admin/admin-notice";
 
 export const dynamic = "force-dynamic";
 
@@ -81,7 +82,12 @@ function ReviewForm({ review }: { review?: ReviewRow }) {
   );
 }
 
-export default async function ReviewsAdminPage() {
+export default async function ReviewsAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { notice, error } = readFeedback(await searchParams);
   const supabase = await getMigrationAwareServerSupabase();
   const { data } = await supabase
     .from("reviews")
@@ -97,6 +103,8 @@ export default async function ReviewsAdminPage() {
         title="Avis"
         description="Avis clients. Seuls les avis approuvés apparaissent dans la boutique ; sans ID produit, ils sont considérés comme un avis boutique sur la page d'accueil."
       />
+
+      <AdminNotice notice={notice} error={error} />
 
       <Card>
         <CardContent className="pt-6">

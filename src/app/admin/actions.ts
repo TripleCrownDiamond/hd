@@ -45,6 +45,21 @@ function revalidateStorefront(): void {
 const optionalText = z.string().trim().transform((value) => value || null);
 const idSchema = z.string().uuid();
 
+/**
+ * End an action with visible feedback instead of leaving the operator staring
+ * at a page that just re-rendered. Every admin CRUD action funnels through
+ * here: on success it drops back to `page` with `?notice=…`, on failure with
+ * `?error=…`, and the page shows an `AdminNotice` banner.
+ */
+function back(page: string, notice?: string, error?: string): never {
+  const search = new URLSearchParams();
+  if (notice) search.set("notice", notice);
+  if (error) search.set("error", error);
+  const suffix = search.toString();
+  const separator = page.includes("?") ? "&" : "?";
+  redirect(suffix ? `${page}${separator}${suffix}` : page);
+}
+
 const productSchema = z.object({
   id: z.string().uuid().optional(),
   slug: z.string().trim().min(2).regex(/^[a-z0-9-]+$/),
@@ -145,7 +160,7 @@ export async function saveProduct(formData: FormData) {
   }
   // Fail visibly instead of leaving the admin on a page that looks untouched:
   // a bare throw would drop the whole edit on the Next error screen.
-  if (error || !data) redirect(`/admin/produkte${id ? `/${id}` : ""}?error=1`);
+  if (error || !data) back(`/admin/produkte${id ? `/${id}` : ""}`, undefined, "Le produit n'a pas pu être enregistré.");
   const savedId = data.id as string;
   await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "product.update" : "product.create", entity: "product", entityId: savedId });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
@@ -153,7 +168,7 @@ export async function saveProduct(formData: FormData) {
   // Land back on the product page with a confirmation in the URL so the save
   // is unmistakable — otherwise the form re-renders with identical values and
   // "nothing seems to have happened".
-  redirect(`/admin/produkte/${savedId}?notice=saved`);
+  back(`/admin/produkte/${savedId}`, "Produit enregistré.");
 }
 
 export async function archiveProduct(formData: FormData) {
@@ -161,9 +176,10 @@ export async function archiveProduct(formData: FormData) {
   const id = idSchema.parse(formData.get("id"));
   const supabase = await getMigrationAwareServerSupabase();
   const { error } = await supabase.from("products").update({ is_published: false, review_status: "superseded" }).eq("id", id);
-  if (error) throw new Error("Le produit n'a pas pu être archivé.");
+  if (error) back("/admin/produkte", undefined, "Le produit n'a pas pu être archivé.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "product.archive", entity: "product", entityId: id });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
+  back("/admin/produkte", "Produit archivé.");
 }
 
 export async function deleteProduct(formData: FormData) {
@@ -175,24 +191,28 @@ export async function deleteProduct(formData: FormData) {
   await supabase.from("product_documents").delete().eq("product_id", id);
   await supabase.from("product_variants").delete().eq("product_id", id);
   const { error } = await supabase.from("products").delete().eq("id", id);
-  if (error) throw new Error("Le produit n'a pas pu être supprimé.");
+  if (error) back("/admin/produkte", undefined, "Le produit n'a pas pu être supprimé.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "product.delete", entity: "product", entityId: id });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
+  back("/admin/produkte", "Produit supprimé.");
 }
 
 /** Delete multiple products at once (bulk action from the admin list). */
 export async function deleteProducts(formData: FormData) {
   const actor = await requireAdminAccess(["admin"]);
   const raw = formData.get("ids");
-  if (!raw || typeof raw !== "string") throw new Error("Aucun produit sélectionné.");
-  const ids = raw
+  if (!raw || typeof raw !== "string") back("/admin/produkte", undefined, "Aucun produit sélectionné.");
+  const ids = (raw as string)
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  if (ids.length === 0) throw new Error("Aucun produit sélectionné.");
-  if (ids.length > 200) throw new Error("Trop de produits sélectionnés (max 200).");
+  if (ids.length === 0) back("/admin/produkte", undefined, "Aucun produit sélectionné.");
+  if (ids.length > 200) back("/admin/produkte", undefined, "Trop de produits sélectionnés (max 200).");
   // Validate every ID is a UUID.
-  for (const id of ids) idSchema.parse(id);
+  for (const id of ids) {
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) back("/admin/produkte", undefined, "Sélection invalide.");
+  }
 
   const supabase = await getMigrationAwareServerSupabase();
   // Delete children first (foreign key cascade may or may not exist).
@@ -200,13 +220,14 @@ export async function deleteProducts(formData: FormData) {
   await supabase.from("product_documents").delete().in("product_id", ids);
   await supabase.from("product_variants").delete().in("product_id", ids);
   const { error } = await supabase.from("products").delete().in("id", ids);
-  if (error) throw new Error("Les produits n'ont pas pu être supprimés.");
+  if (error) back("/admin/produkte", undefined, "Les produits n'ont pas pu être supprimés.");
   await auditAdminAction({
     ...actor, actorId: actor.userId,
     action: "product.bulk_delete", entity: "product",
     metadata: { count: ids.length },
   });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
+  back("/admin/produkte", `${ids.length} produit${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""}.`);
 }
 
 /**
@@ -217,28 +238,32 @@ export async function deleteProducts(formData: FormData) {
 export async function setProductsPublished(formData: FormData) {
   const actor = await requireAdminAccess(["admin", "content_editor"]);
   const raw = formData.get("ids");
-  if (!raw || typeof raw !== "string") throw new Error("Aucun produit sélectionné.");
+  if (!raw || typeof raw !== "string") back("/admin/produkte", undefined, "Aucun produit sélectionné.");
   const published = formData.get("published") === "1";
-  const ids = raw
+  const ids = (raw as string)
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  if (ids.length === 0) throw new Error("Aucun produit sélectionné.");
-  if (ids.length > 200) throw new Error("Trop de produits sélectionnés (max 200).");
-  for (const id of ids) idSchema.parse(id);
+  if (ids.length === 0) back("/admin/produkte", undefined, "Aucun produit sélectionné.");
+  if (ids.length > 200) back("/admin/produkte", undefined, "Trop de produits sélectionnés (max 200).");
+  for (const id of ids) {
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) back("/admin/produkte", undefined, "Sélection invalide.");
+  }
 
   const supabase = await getMigrationAwareServerSupabase();
   const { error } = await supabase
     .from("products")
     .update({ is_published: published })
     .in("id", ids);
-  if (error) throw new Error("La visibilité n'a pas pu être modifiée.");
+  if (error) back("/admin/produkte", undefined, "La visibilité n'a pas pu être modifiée.");
   await auditAdminAction({
     ...actor, actorId: actor.userId,
     action: published ? "product.bulk_publish" : "product.bulk_unpublish", entity: "product",
     metadata: { count: ids.length },
   });
   invalidateCatalogCache(); revalidateTag("catalog"); revalidatePath("/admin/produkte"); revalidateStorefront();
+  back("/admin/produkte", `${ids.length} produit${ids.length > 1 ? "s" : ""} ${published ? "publié" : "dépublié"}${ids.length > 1 ? "s" : ""}.`);
 }
 
 /** Delete a single product_media row. */
@@ -311,7 +336,7 @@ export async function updateOrder(formData: FormData) {
   if (status === "delivered") patch.delivered_at = now;
 
   const { error } = await supabase.from("orders").update(patch).eq("id", id);
-  if (error) throw new Error("La commande n'a pas pu être mise à jour.");
+  if (error) back("/admin/bestellungen", undefined, "La commande n'a pas pu être mise à jour.");
 
   await supabase.from("order_events").insert({
     order_id: id,
@@ -348,6 +373,7 @@ export async function updateOrder(formData: FormData) {
   }
 
   revalidatePath("/admin/bestellungen");
+  back("/admin/bestellungen", "Commande mise à jour.");
 }
 
 const contentSchema = z.object({
@@ -366,13 +392,14 @@ export async function saveContent(formData: FormData) {
   const supabase = await getMigrationAwareServerSupabase();
   const query = id ? supabase.from("content_entries").update(payload).eq("id", id).select("id").single() : supabase.from("content_entries").insert(payload).select("id").single();
   const { data, error } = await query;
-  if (error) throw new Error("Le contenu n'a pas pu être enregistré.");
-  await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "content.update" : "content.create", entity: "content", entityId: data.id });
+  if (error || !data) back(`/admin/inhalte${id ? `?edit=${id}` : ""}`, undefined, "Le contenu n'a pas pu être enregistré.");
+  await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "content.update" : "content.create", entity: "content", entityId: (data.id as string) });
   // The guide index and its article pages are ISR, so they need dropping too —
   // both are rendered from content_entries.
   revalidatePath("/admin/inhalte"); revalidatePath(`/${values.slug}`);
   revalidatePath("/ratgeber"); revalidatePath("/ratgeber/[slug]", "page");
   revalidatePath("/");
+  back(`/admin/inhalte?edit=${data.id as string}`, "Contenu enregistré.");
 }
 
 /**
@@ -394,13 +421,13 @@ export async function seedLegalContent() {
       "slug",
       LEGAL_DEFAULTS.map((entry) => entry.slug),
     );
-  if (readError) throw new Error("Les contenus existants n'ont pas pu être lus.");
+  if (readError) back("/admin/inhalte", undefined, "Les contenus existants n'ont pas pu être lus.");
 
   const taken = new Set((existing ?? []).map((row) => String(row.slug).toLowerCase()));
   const missing = LEGAL_DEFAULTS.filter((entry) => !taken.has(entry.slug));
   if (missing.length === 0) {
     revalidatePath("/admin/inhalte");
-    return;
+    back("/admin/inhalte", "Aucun nouveau brouillon à créer.");
   }
 
   const { error } = await supabase.from("content_entries").insert(
@@ -418,7 +445,7 @@ export async function seedLegalContent() {
       author_id: actor.userId,
     })),
   );
-  if (error) throw new Error("Les textes juridiques n'ont pas pu être créés.");
+  if (error) back("/admin/inhalte", undefined, "Les textes juridiques n'ont pas pu être créés.");
 
   await auditAdminAction({
     ...actor,
@@ -428,6 +455,7 @@ export async function seedLegalContent() {
     metadata: { created: missing.map((entry) => entry.slug).join(",") },
   });
   revalidatePath("/admin/inhalte");
+  back("/admin/inhalte", `${missing.length} brouillon${missing.length > 1 ? "s" : ""} créé${missing.length > 1 ? "s" : ""}, à vérifier dans la liste.`);
 }
 
 const reviewSchema = z.object({
@@ -463,9 +491,10 @@ export async function saveReview(formData: FormData) {
     ? supabase.from("reviews").update(values).eq("id", id).select("id").single()
     : supabase.from("reviews").insert(values).select("id").single();
   const { data, error } = await query;
-  if (error) throw new Error("L'avis n'a pas pu être enregistré.");
-  await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "review.update" : "review.create", entity: "review", entityId: data.id });
+  if (error || !data) back(`/admin/bewertungen${id ? `?edit=${id}` : ""}`, undefined, "L'avis n'a pas pu être enregistré.");
+  await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "review.update" : "review.create", entity: "review", entityId: (data.id as string) });
   revalidatePath("/admin/bewertungen"); revalidatePath("/", "layout");
+  back("/admin/bewertungen", `${id ? "Avis enregistré." : "Avis créé."}`);
 }
 
 export async function deleteReview(formData: FormData) {
@@ -473,9 +502,10 @@ export async function deleteReview(formData: FormData) {
   const id = idSchema.parse(formData.get("id"));
   const supabase = await getMigrationAwareServerSupabase();
   const { error } = await supabase.from("reviews").delete().eq("id", id);
-  if (error) throw new Error("L'avis n'a pas pu être supprimé.");
+  if (error) back("/admin/bewertungen", undefined, "L'avis n'a pas pu être supprimé.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "review.delete", entity: "review", entityId: id });
   revalidatePath("/admin/bewertungen"); revalidatePath("/", "layout");
+  back("/admin/bewertungen", "Avis supprimé.");
 }
 
 const settingsFields = ["company_name","legal_form","street","postal_code","city","country_code","phone","phone_secondary","email","support_email","vat_id","tax_number","commercial_register","register_court","managing_director","social_instagram","social_facebook","social_tiktok","social_linkedin","social_youtube","logo_url","invoice_prefix","invoice_footer","chatbot_name","support_hours"] as const;
@@ -502,12 +532,13 @@ export async function saveSiteSettings(formData: FormData) {
     for (const column of OPTIONAL_SETTINGS_COLUMNS) delete (reduced as Record<string, unknown>)[column];
     ({ error } = await supabase.from("site_settings").update(reduced).eq("id", 1));
   }
-  if (error) throw new Error("Les réglages n'ont pas pu être enregistrés.");
+  if (error) back("/admin/einstellungen", undefined, "Les réglages n'ont pas pu être enregistrés.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "settings.update", entity: "site_settings", entityId: "1" });
   // Legal pages read the company details through the shortcode cache; without
   // this an address change takes up to a minute to appear.
   invalidateShortcodeCache();
   revalidatePath("/", "layout"); revalidatePath("/admin/einstellungen");
+  back("/admin/einstellungen", "Réglages enregistrés.");
 }
 
 const paymentTextFields = [
@@ -549,13 +580,13 @@ export async function savePaymentSettings(formData: FormData) {
   // A method cannot be switched on without what it needs to take a payment,
   // otherwise the checkout would offer a dead end.
   if (bankEnabled && (!iban || !text.bank_account_holder)) {
-    throw new Error("Le virement nécessite un IBAN et un titulaire de compte.");
+    back("/admin/zahlungen", undefined, "Le virement nécessite un IBAN et un titulaire de compte.");
   }
   if (cardEnabled && (!text.card_provider || !text.card_publishable_key)) {
-    throw new Error("Le paiement par carte nécessite un prestataire et une clé publishable.");
+    back("/admin/zahlungen", undefined, "Le paiement par carte nécessite un prestataire et une clé publishable.");
   }
   if (cryptoEnabled && (!text.crypto_provider || currencies.length === 0)) {
-    throw new Error("Le paiement en crypto nécessite un prestataire et au moins une devise.");
+    back("/admin/zahlungen", undefined, "Le paiement en crypto nécessite un prestataire et au moins une devise.");
   }
   // The deposit is settled by transfer and the customer pays it now, so it
   // needs the bank transfer switched on with a real account — the seeded
@@ -568,7 +599,7 @@ export async function savePaymentSettings(formData: FormData) {
       !text.bank_account_holder ||
       text.bank_account_holder === PLACEHOLDER_ACCOUNT_HOLDER)
   ) {
-    throw new Error("L'acompte nécessite un virement activé avec un vrai compte bancaire (pas les coordonnées provisoires).");
+    back("/admin/zahlungen", undefined, "L'acompte nécessite un virement activé avec un vrai compte bancaire (pas les coordonnées provisoires).");
   }
 
   const supabase = await getMigrationAwareServerSupabase();
@@ -587,12 +618,13 @@ export async function savePaymentSettings(formData: FormData) {
       updated_by: actor.userId,
     })
     .eq("id", 1);
-  if (error) throw new Error("Les moyens de paiement n'ont pas pu être enregistrés.");
+  if (error) back("/admin/zahlungen", undefined, "Les moyens de paiement n'ont pas pu être enregistrés.");
 
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "payment_settings.update", entity: "payment_settings", entityId: "1" });
   // The Zahlungsarten page renders the IBAN through a shortcode.
   invalidateShortcodeCache();
   revalidatePath("/admin/zahlungen"); revalidatePath("/kasse"); revalidatePath("/zahlung");
+  back("/admin/zahlungen", "Moyens de paiement enregistrés.");
 }
 
 const promotionSchema = z.object({
@@ -629,13 +661,13 @@ export async function savePromotion(formData: FormData) {
   // Both scales are hundredths of their unit: 10 % is stored as 1 000 basis
   // points, 10 € as 1 000 cents. Same arithmetic, so one branch covers both.
   const storedValue = Math.round(input.discount_value * 100);
-  if (input.discount_type === "percentage" && storedValue > 10_000) throw new Error("La remise en pourcentage ne peut pas dépasser 100 %.");
+  if (input.discount_type === "percentage" && storedValue > 10_000) back("/admin/rabatte", undefined, "La remise en pourcentage ne peut pas dépasser 100 %.");
   const { id, ...rest } = input;
   const supabase = await getMigrationAwareServerSupabase();
   const payload = { ...rest, discount_value: storedValue, created_by: actor.userId };
   const query = id ? supabase.from("promotions").update(payload).eq("id", id).select("id").single() : supabase.from("promotions").insert(payload).select("id").single();
   const { data, error } = await query;
-  if (error || !data) throw new Error("La remise n'a pas pu être enregistrée.");
+  if (error || !data) back(`/admin/rabatte${id ? `?edit=${id}` : ""}`, undefined, "La remise n'a pas pu être enregistrée.");
   const promotionId = data.id as string;
   await Promise.all([
     supabase.from("promotion_products").delete().eq("promotion_id", promotionId),
@@ -643,18 +675,19 @@ export async function savePromotion(formData: FormData) {
   ]);
   if (input.scope === "products") {
     const ids = formData.getAll("product_ids").map(String);
-    if (!ids.length) throw new Error("Sélectionnez au moins un produit.");
+    if (!ids.length) back("/admin/rabatte", undefined, "Sélectionnez au moins un produit.");
     const { error: linkError } = await supabase.from("promotion_products").insert(ids.map((product_id) => ({ promotion_id: promotionId, product_id })));
-    if (linkError) throw new Error("La sélection de produits n'a pas pu être enregistrée.");
+    if (linkError) back("/admin/rabatte", undefined, "La sélection de produits n'a pas pu être enregistrée.");
   }
   if (input.scope === "categories") {
     const ids = formData.getAll("category_ids").map(String);
-    if (!ids.length) throw new Error("Mindestens eine Kategorie auswählen.");
+    if (!ids.length) back("/admin/rabatte", undefined, "Sélectionnez au moins une catégorie.");
     const { error: linkError } = await supabase.from("promotion_categories").insert(ids.map((category_id) => ({ promotion_id: promotionId, category_id })));
-    if (linkError) throw new Error("Kategorieauswahl konnte nicht gespeichert werden.");
+    if (linkError) back("/admin/rabatte", undefined, "La sélection de catégories n'a pas pu être enregistrée.");
   }
   await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "promotion.update" : "promotion.create", entity: "promotion", entityId: promotionId });
   revalidatePath("/admin/rabatte"); revalidatePath("/kasse");
+  back("/admin/rabatte", `${id ? "Remise enregistrée." : "Remise créée."}`);
 }
 
 export async function archivePromotion(formData: FormData) {
@@ -662,9 +695,10 @@ export async function archivePromotion(formData: FormData) {
   const id = idSchema.parse(formData.get("id"));
   const supabase = await getMigrationAwareServerSupabase();
   const { error } = await supabase.from("promotions").update({ is_active: false }).eq("id", id);
-  if (error) throw new Error("La remise n'a pas pu être désactivée.");
+  if (error) back("/admin/rabatte", undefined, "La remise n'a pas pu être désactivée.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "promotion.archive", entity: "promotion", entityId: id });
   revalidatePath("/admin/rabatte"); revalidatePath("/kasse");
+  back("/admin/rabatte", "Remise désactivée.");
 }
 
 const faqSchema = z.object({
@@ -679,16 +713,18 @@ export async function saveFaq(formData: FormData) {
   const input = faqSchema.parse({ id: formData.get("id") || undefined, question: formData.get("question"), answer: formData.get("answer"), category: formData.get("category"), product_id: formData.get("product_id") || null, position: formData.get("position") || 0, status: formData.get("status") });
   const { id, ...values } = input; const supabase = await getMigrationAwareServerSupabase();
   const query = id ? supabase.from("faq_entries").update({ ...values, updated_by: actor.userId }).eq("id", id).select("id").single() : supabase.from("faq_entries").insert({ ...values, updated_by: actor.userId }).select("id").single();
-  const { data, error } = await query; if (error || !data) throw new Error("L'entrée FAQ n'a pas pu être enregistrée.");
-  await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "faq.update" : "faq.create", entity: "faq", entityId: data.id });
+  const { data, error } = await query; if (error || !data) back("/admin/faq", undefined, "L'entrée FAQ n'a pas pu être enregistrée.");
+  await auditAdminAction({ ...actor, actorId: actor.userId, action: id ? "faq.update" : "faq.create", entity: "faq", entityId: (data.id as string) });
   revalidatePath("/faq"); revalidatePath("/admin/faq");
+  back("/admin/faq", `${id ? "Entrée FAQ enregistrée." : "Entrée FAQ créée."}`);
 }
 
 export async function archiveFaq(formData: FormData) {
   const actor = await requireAdminAccess(["admin", "content_editor"]); const id = idSchema.parse(formData.get("id"));
   const supabase = await getMigrationAwareServerSupabase(); const { error } = await supabase.from("faq_entries").update({ status: "archived", updated_by: actor.userId }).eq("id", id);
-  if (error) throw new Error("L'entrée FAQ n'a pas pu être archivée.");
+  if (error) back("/admin/faq", undefined, "L'entrée FAQ n'a pas pu être archivée.");
   await auditAdminAction({ ...actor, actorId: actor.userId, action: "faq.archive", entity: "faq", entityId: id }); revalidatePath("/faq"); revalidatePath("/admin/faq");
+  back("/admin/faq", "Entrée FAQ archivée.");
 }
 
 /**
@@ -701,19 +737,19 @@ export async function archiveFaq(formData: FormData) {
 export async function sendTestEmail() {
   const actor = await requireAdminAccess(["admin"]);
   const inbox = adminInbox();
-  if (!inbox) throw new Error("Aucun e-mail admin configuré (ADMIN_EMAIL).");
+  if (!inbox) back("/admin", undefined, "Aucun e-mail admin configuré (ADMIN_EMAIL).");
 
   const check = await verifyEmailTransport();
-  if (!check.ok) throw new Error(check.detail);
+  if (!check.ok) back("/admin", undefined, check.detail);
 
   const sentAt = new Date().toLocaleString("de-DE");
   const result = await sendEmail({
-    to: inbox,
+    to: inbox as string,
     subject: `${BRAND_NAME} — Testnachricht`,
     text: `Diese Testnachricht wurde am ${sentAt} aus der Administration ausgelöst. Wenn Sie sie lesen, funktioniert der Versand von Bestellbestätigungen und Statusmeldungen.`,
     html: `<p>Diese Testnachricht wurde am ${sentAt} aus der Administration ausgelöst.</p><p>Wenn Sie sie lesen, funktioniert der Versand von Bestellbestätigungen und Statusmeldungen.</p>`,
   });
-  if (!result.sent) throw new Error(`Envoi échoué : ${result.error ?? result.skipped}`);
+  if (!result.sent) back("/admin", undefined, `Envoi échoué : ${result.error ?? result.skipped}`);
 
   await auditAdminAction({
     ...actor,
@@ -723,6 +759,7 @@ export async function sendTestEmail() {
     metadata: { transport: result.transport ?? "unknown", to: inbox },
   });
   revalidatePath("/admin");
+  back("/admin", "E-mail de test envoyé.");
 }
 
 const extraLineSchema = z.object({

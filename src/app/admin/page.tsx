@@ -3,6 +3,7 @@ import { ShoppingBag, PackageOpen, Users, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminHeader } from "@/components/admin/admin-ui";
+import { AdminNotice, readFeedback } from "@/components/admin/admin-notice";
 import { GoLiveChecklist } from "@/components/admin/go-live-checklist";
 import { getMigrationAwareServerSupabase } from "@/lib/db/server";
 import { formatPrice } from "@/lib/utils";
@@ -29,7 +30,12 @@ async function safeRows<T>(query: PromiseLike<{ data: T[] | null }>): Promise<T[
   }
 }
 
-export default async function AdminOverviewPage() {
+export default async function AdminOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { notice, error } = readFeedback(await searchParams);
   const db = await getMigrationAwareServerSupabase();
   // The dashboard is read-only diagnostics: a transient Supabase failure must
   // not take the whole admin down with it. Each read degrades to 0 / an empty
@@ -51,6 +57,7 @@ export default async function AdminOverviewPage() {
     ["Clients", customers, Users], ["Factures", invoices, FileText],
   ] as const;
   return <div className="space-y-8"><AdminHeader eyebrow="Exploitation" title="Aperçu" description="État actuel du catalogue, des commandes, des clients et des documents." />
+    <AdminNotice notice={notice} error={error} />
     <GoLiveChecklist />
     <section aria-label="Indicateurs" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{stats.map(([label,value,Icon]) => <Card key={label}><CardContent className="pt-6"><div className="bg-brand/5 flex size-10 items-center justify-center rounded-lg"><Icon className="text-brand size-5" /></div><p className="text-muted mt-4 text-xs font-semibold tracking-wider uppercase">{label}</p><p className="text-text mt-1 font-mono text-3xl font-semibold">{value}</p></CardContent></Card>)}</section>
     <Card><CardHeader><CardTitle>Dernières commandes</CardTitle><CardDescription>Les cinq dernières commandes créées.</CardDescription></CardHeader><CardContent>{recent.length === 0 ? <p className="text-muted py-8 text-center text-sm">Aucune commande pour le moment.</p> : <ul className="divide-border divide-y">{recent.map((order) => <li key={order.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><strong>{order.order_number}</strong><span className="text-muted ml-2 text-sm">{order.customer_name}</span></div><div className="flex items-center gap-3"><Badge>{order.status}</Badge><span className="font-mono text-sm">{formatPrice(order.total_cents)}</span></div></li>)}</ul>}</CardContent></Card>

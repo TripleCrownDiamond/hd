@@ -17,6 +17,7 @@ export function ImageUploader({ productId, onUploaded }: ImageUploaderProps) {
   const [altText, setAltText] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
   const handleFile = useCallback((f: File) => {
@@ -29,6 +30,7 @@ export function ImageUploader({ productId, onUploaded }: ImageUploaderProps) {
       return;
     }
     setError(null);
+    setSuccess(null);
     setFile(f);
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
@@ -49,6 +51,7 @@ export function ImageUploader({ productId, onUploaded }: ImageUploaderProps) {
     if (!file) return;
     setUploading(true);
     setError(null);
+    setSuccess(null);
     try {
       const fd = new FormData();
       fd.append("product_id", productId);
@@ -65,6 +68,7 @@ export function ImageUploader({ productId, onUploaded }: ImageUploaderProps) {
       setFile(null);
       setPreview(null);
       setAltText("");
+      setSuccess("Bild hochgeladen.");
       onUploaded?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload fehlgeschlagen.");
@@ -161,6 +165,11 @@ export function ImageUploader({ productId, onUploaded }: ImageUploaderProps) {
         </div>
       )}
 
+      {success ? (
+        <p className="text-success text-sm" role="status">
+          {success}
+        </p>
+      ) : null}
       {error && (
         <p className="text-danger text-sm" role="alert">{error}</p>
       )}

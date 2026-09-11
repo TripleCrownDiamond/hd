@@ -16,6 +16,7 @@ import {
   fieldClass,
   areaClass,
 } from "@/components/admin/admin-ui";
+import { AdminNotice, readFeedback } from "@/components/admin/admin-notice";
 import { GrundpreisFields } from "@/components/admin/grundpreis-fields";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { ProductImageGallery } from "@/components/admin/product-image-gallery";
@@ -49,9 +50,7 @@ export default async function ProductDetailPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
-  const query = searchParams ? await searchParams : undefined;
-  const notice = typeof query?.notice === "string" ? query.notice : null;
-  const error = typeof query?.error === "string" ? query.error : null;
+  const { notice, error } = readFeedback(searchParams ? await searchParams : undefined);
   const supabase = await getMigrationAwareServerSupabase();
 
   const { data: product } = await supabase
@@ -101,22 +100,7 @@ export default async function ProductDetailPage({
 
       {/* Save feedback: the action redirects back here with a query param so
           an edit is never a silent no-op. */}
-      {notice === "saved" ? (
-        <div
-          role="status"
-          className="border-success/30 bg-success/10 text-success rounded-md border px-4 py-3 text-sm"
-        >
-          Produit enregistré.
-        </div>
-      ) : null}
-      {error === "1" ? (
-        <div
-          role="alert"
-          className="border-danger/20 bg-danger/5 text-danger rounded-md border px-4 py-3 text-sm"
-        >
-          Le produit n&apos;a pas pu être enregistré.
-        </div>
-      ) : null}
+      <AdminNotice notice={notice} error={error} />
 
       {/* Status badges */}
       <div className="flex flex-wrap gap-2">

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { centsToEuroInput } from "@/lib/utils";
 import { archivePromotion, savePromotion } from "../actions";
+import { AdminNotice, readFeedback } from "@/components/admin/admin-notice";
 
 function PromotionForm({ promotion, products, categories, selectedProducts, selectedCategories }: { promotion?: Record<string, unknown>; products: { id: string; model: string }[]; categories: { id: string; name: string }[]; selectedProducts: Set<string>; selectedCategories: Set<string> }) {
   const type = String(promotion?.discount_type ?? "percentage");
@@ -31,7 +32,12 @@ function PromotionForm({ promotion, products, categories, selectedProducts, sele
   </form>;
 }
 
-export default async function DiscountsAdminPage() {
+export default async function DiscountsAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { notice, error } = readFeedback(await searchParams);
   const supabase = await getMigrationAwareServerSupabase();
   const [{ data: promotions }, { data: products }, { data: categories }, { data: pp }, { data: pc }] = await Promise.all([
     supabase.from("promotions").select("*").order("created_at", { ascending: false }),
@@ -41,6 +47,7 @@ export default async function DiscountsAdminPage() {
   const pRows = (products ?? []) as { id: string; model: string }[]; const cRows = (categories ?? []) as { id: string; name: string }[];
   const sets = (id?: unknown) => ({ products: new Set((pp ?? []).filter((x) => x.promotion_id === id).map((x) => x.product_id as string)), categories: new Set((pc ?? []).filter((x) => x.promotion_id === id).map((x) => x.category_id as string)) });
   return <div className="space-y-8"><AdminHeader eyebrow="Marketing" title="Remises & codes promo" description="Remises limitées dans le temps pour toute la boutique, des produits ou des catégories. Le calcul est vérifié côté serveur." />
+    <AdminNotice notice={notice} error={error} />
     <Card><CardContent className="pt-6"><details><summary className="cursor-pointer font-semibold">Créer une remise</summary><div className="mt-6"><PromotionForm products={pRows} categories={cRows} selectedProducts={new Set()} selectedCategories={new Set()} /></div></details></CardContent></Card>
     {!promotions?.length ? <EmptyAdmin>Aucune remise pour le moment.</EmptyAdmin> : promotions.map((promotion) => { const selected = sets(promotion.id); return <Card key={promotion.id}><CardContent className="pt-6"><details><summary className="flex cursor-pointer justify-between gap-3"><strong className="min-w-0">{promotion.code} · {promotion.name}</strong><span className="text-muted shrink-0 text-sm">{promotion.is_active ? "Actif" : "Inactif"} · {promotion.times_redeemed} utilisations</span></summary><div className="mt-6"><PromotionForm promotion={promotion} products={pRows} categories={cRows} selectedProducts={selected.products} selectedCategories={selected.categories} /><form action={archivePromotion} className="mt-4"><input type="hidden" name="id" value={promotion.id} /><Button variant="destructive" size="sm"><Archive className="size-4" />Désactiver</Button></form></div></details></CardContent></Card>; })}
   </div>;

@@ -25,38 +25,53 @@ export function ProductImageGallery({
   onReorder,
 }: ProductImageGalleryProps) {
   const [images, setImages] = useState(initialImages);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const callAction = async (action: string, payload: Record<string, string>) => {
+  const callAction = async (action: string, payload: Record<string, string>): Promise<boolean> => {
     const fd = new FormData();
     for (const [k, v] of Object.entries(payload)) fd.append(k, v);
-    await fetch(`/api/admin/product-images/${action}`, {
-      method: "POST",
-      body: fd,
-    });
-    onReorder?.();
-    // Re-fetch the page to get updated order.
-    window.location.reload();
+    try {
+      const res = await fetch(`/api/admin/product-images/${action}`, {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error || "Opération impossible sur l'image.");
+        return false;
+      }
+      setError(null);
+      onReorder?.();
+      return true;
+    } catch {
+      setError("La communication avec le serveur a échoué.");
+      return false;
+    }
   };
 
   const move = (id: string, direction: "up" | "down") => {
     startTransition(async () => {
-      await callAction("reorder", {
+      const ok = await callAction("reorder", {
         image_id: id,
         product_id: productId,
         direction,
       });
+      if (ok) window.location.reload();
     });
   };
 
   const remove = (id: string) => {
     if (!window.confirm("Bild wirklich löschen?")) return;
     startTransition(async () => {
-      await callAction("delete", {
+      const ok = await callAction("delete", {
         image_id: id,
         product_id: productId,
       });
-      setImages((prev) => prev.filter((img) => img.id !== id));
+      if (ok) {
+        setImages((prev) => prev.filter((img) => img.id !== id));
+        window.location.reload();
+      }
     });
   };
 
@@ -70,6 +85,11 @@ export function ProductImageGallery({
 
   return (
     <div className="space-y-2">
+      {error ? (
+        <p className="text-danger text-sm" role="alert">
+          {error}
+        </p>
+      ) : null}
       {images.map((img, idx) => (
         <div
           key={img.id}

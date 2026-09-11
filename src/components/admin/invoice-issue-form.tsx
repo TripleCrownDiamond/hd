@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Field, fieldClass } from "@/components/admin/admin-ui";
 import { issueInvoice } from "@/app/admin/actions";
@@ -27,8 +28,10 @@ export function InvoiceIssueForm({
 }) {
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
 
   const update = (index: number, patch: Partial<Row>) =>
     setRows((current) => current.map((row, i) => (i === index ? { ...row, ...patch } : row)));
@@ -48,9 +51,12 @@ export function InvoiceIssueForm({
     startTransition(async () => {
       try {
         setError(null);
+        setSuccess(null);
         await issueInvoice(formData);
         formRef.current?.reset();
         setRows([emptyRow()]);
+        setSuccess("Facture émise — elle apparaît dans la liste ci-dessous.");
+        router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "La facture n'a pas pu être émise.");
       }
@@ -103,6 +109,7 @@ export function InvoiceIssueForm({
         <Button type="button" variant="secondary" size="sm" onClick={addRow}>Ajouter une ligne</Button>
       </div>
 
+      {success ? <p className="text-success" role="status">{success}</p> : null}
       {error ? <p className="text-red-600 text-sm" role="alert">{error}</p> : null}
       <Button disabled={pending}>{pending ? "Émission…" : "Émettre le PDF"}</Button>
     </form>

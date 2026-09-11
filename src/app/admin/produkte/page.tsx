@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminHeader, EmptyAdmin, Field, fieldClass, areaClass } from "@/components/admin/admin-ui";
+import { AdminNotice, readFeedback } from "@/components/admin/admin-notice";
 import { GrundpreisFields } from "@/components/admin/grundpreis-fields";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
 import { BulkActionsBar } from "@/components/admin/bulk-actions-bar";
@@ -132,8 +133,10 @@ export default async function ProductsAdminPage({
   );
 
   const filtered = Boolean(q || kind || status || published);
+  const { notice, error } = readFeedback(params);
 
   return <div className="space-y-8"><AdminHeader eyebrow="Catalogue" title="Produits" description="Créer, modifier, publier ou archiver des produits avec traçabilité complète." />
+    <AdminNotice notice={notice} error={error} />
     <Card><CardContent className="pt-6"><details><summary className="text-text flex cursor-pointer items-center gap-2 font-semibold"><Plus className="size-4" />Nouveau produit</summary><div className="mt-6"><ProductForm /></div></details></CardContent></Card>
 
     <Card><CardContent className="grid gap-4 pt-6 md:grid-cols-[2fr_1fr_1fr_1fr] md:items-start">
